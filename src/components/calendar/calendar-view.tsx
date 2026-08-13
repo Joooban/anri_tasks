@@ -46,6 +46,14 @@ function renderEventContent(arg: EventContentArg) {
 
   return (
     <div className={clsx("flex min-w-0 items-center gap-1 px-0.5", isDone && "opacity-60")}>
+      {/* Drawn ourselves rather than relying on FullCalendar's own dot/
+          background coloring, which is what differs between its two
+          inconsistent display modes — see the CSS override in
+          globals.css for why. */}
+      <span
+        className="h-1.5 w-1.5 shrink-0 rounded-full"
+        style={{ background: arg.event.backgroundColor || arg.event.borderColor }}
+      />
       <span className="shrink-0 text-[0.7rem]">
         {props.type === "meeting" ? "🗓️" : isBlocked ? "🚫" : isOverdue ? "⚠️" : "📋"}
       </span>

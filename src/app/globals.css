@@ -52,3 +52,25 @@ button:not(:disabled),
 button:disabled {
   cursor: not-allowed;
 }
+
+/* FullCalendar's dayGrid view sometimes assigns an event the "block"
+   (full-width, background-filled) class instead of "list-item" (compact
+   dot) even with eventDisplay: "list-item" explicitly set — a known
+   library inconsistency (fullcalendar/fullcalendar#5634) tied to the
+   event's date, not anything in our data. Since CalendarView already
+   renders fully custom content (icon, title, and its own color dot) via
+   eventContent, FullCalendar's own chrome is neutralized here so both
+   variants render identically instead of one being a wide bar. */
+.fc-daygrid-event {
+  width: auto !important;
+  max-width: 100%;
+  background: transparent !important;
+  border-color: transparent !important;
+  margin-bottom: 1px !important;
+}
+.fc-daygrid-event .fc-event-main {
+  padding: 1px 2px !important;
+}
+.fc-daygrid-event-dot {
+  display: none !important;
+}
