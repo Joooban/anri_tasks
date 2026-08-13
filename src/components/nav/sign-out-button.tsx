@@ -21,9 +21,10 @@ export function SignOutButton({ className }: { className?: string }) {
       </button>
       <ConfirmDialog
         open={open}
-        title="Sign out?"
+        title="Are you sure you want to log out?"
         description="You'll need to sign in again to continue."
-        confirmLabel="Sign out"
+        confirmLabel="Log out"
+        destructive
         pending={pending}
         onConfirm={handleConfirm}
         onCancel={() => setOpen(false)}
