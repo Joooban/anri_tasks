@@ -6,7 +6,7 @@ import { getDepartments } from "@/lib/queries";
 import { Sidebar } from "@/components/nav/sidebar";
 import { TopBar } from "@/components/nav/top-bar";
 import { PreviewBanner } from "@/components/preview/preview-banner";
-import { signOut } from "@/app/actions/auth";
+import { SignOutButton } from "@/components/nav/sign-out-button";
 
 export default async function AppLayout({ children }: { children: ReactNode }) {
   const current = await getCurrentProfile();
@@ -29,14 +29,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
           You&apos;re signed in as {profile.email}, but your department and role haven&apos;t
           been assigned yet. Contact the Resident Manager to finish setting up your account.
         </p>
-        <form action={signOut}>
-          <button
-            type="submit"
-            className="rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
-          >
-            Sign out
-          </button>
-        </form>
+        <SignOutButton className="rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200" />
       </div>
     );
   }

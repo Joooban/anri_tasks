@@ -1,5 +1,5 @@
 import { ThemeToggle } from "@/components/theme-toggle";
-import { signOut } from "@/app/actions/auth";
+import { SignOutButton } from "@/components/nav/sign-out-button";
 import { ROLE_LABELS, type Role } from "@/lib/types";
 
 export function TopBar({
@@ -25,14 +25,7 @@ export function TopBar({
               {ROLE_LABELS[role]}
             </p>
           </div>
-          <form action={signOut}>
-            <button
-              type="submit"
-              className="rounded-lg px-2 py-1 text-xs font-medium text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-50"
-            >
-              Sign out
-            </button>
-          </form>
+          <SignOutButton className="rounded-lg px-2 py-1 text-xs font-medium text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-50" />
         </div>
       </div>
     </header>
