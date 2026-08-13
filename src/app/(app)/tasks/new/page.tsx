@@ -1,7 +1,13 @@
+import { redirect } from "next/navigation";
 import { getDepartments, getProfiles, getTaskTypes } from "@/lib/queries";
+import { getCurrentProfile } from "@/lib/get-current-profile";
 import { TaskForm } from "@/components/tasks/task-form";
 
 export default async function NewTaskPage() {
+  const current = await getCurrentProfile();
+  if (!current) redirect("/login");
+  if (current.profile.role === "employee") redirect("/tasks");
+
   const [departments, profiles, taskTypes] = await Promise.all([
     getDepartments(),
     getProfiles(),

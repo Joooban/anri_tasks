@@ -18,6 +18,7 @@ const NAV_ITEMS: NavItem[] = [
   { href: "/history", label: "History" },
   { href: "/announcements", label: "Announcements" },
   { href: "/departments", label: "Company Overview", roles: ["boss_boss", "supervisor"] },
+  { href: "/accounts", label: "Accounts", roles: ["boss_boss", "supervisor"] },
 ];
 
 export function Sidebar({ role, departmentName }: { role: Role; departmentName: string | null }) {
@@ -53,12 +54,14 @@ export function Sidebar({ role, departmentName }: { role: Role; departmentName: 
         })}
       </ul>
 
-      <Link
-        href="/tasks/new"
-        className="mt-4 rounded-lg bg-zinc-900 px-3 py-2 text-center text-sm font-medium text-white hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
-      >
-        + New Task
-      </Link>
+      {role !== "employee" && (
+        <Link
+          href="/tasks/new"
+          className="mt-4 rounded-lg bg-zinc-900 px-3 py-2 text-center text-sm font-medium text-white hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
+        >
+          + New Task
+        </Link>
+      )}
     </nav>
   );
 }

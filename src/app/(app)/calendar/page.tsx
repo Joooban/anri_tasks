@@ -47,12 +47,13 @@ export default async function CalendarPage() {
   ];
 
   const canPostCompanyWide = current?.profile.role === "boss_boss" || current?.profile.role === "supervisor";
+  const canCreateMeeting = current?.profile.role !== "employee";
 
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
         <h1 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">Calendar</h1>
-        <CreateMeetingForm canPostCompanyWide={canPostCompanyWide} />
+        {canCreateMeeting && <CreateMeetingForm canPostCompanyWide={canPostCompanyWide} />}
       </div>
       <CalendarView events={events} />
     </div>
