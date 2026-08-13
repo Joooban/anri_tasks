@@ -1,8 +1,11 @@
 import type { ReactNode } from "react";
 import { redirect } from "next/navigation";
 import { getCurrentProfile } from "@/lib/get-current-profile";
+import { getPreview } from "@/lib/get-preview";
+import { getDepartments } from "@/lib/queries";
 import { Sidebar } from "@/components/nav/sidebar";
 import { TopBar } from "@/components/nav/top-bar";
+import { PreviewBanner } from "@/components/preview/preview-banner";
 import { signOut } from "@/app/actions/auth";
 
 export default async function AppLayout({ children }: { children: ReactNode }) {
@@ -38,10 +41,31 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
     );
   }
 
+  const canPreview = profile.role === "boss_boss" || profile.role === "supervisor";
+  const preview = canPreview ? await getPreview() : null;
+  const departments = canPreview ? await getDepartments() : [];
+  const previewDepartment = preview ? departments.find((d) => d.id === preview.departmentId) : null;
+
+  // What the Sidebar renders is driven by the effective (possibly
+  // previewed) role/department. Real identity — used for auth, RLS, and
+  // everything the server actions do — never changes; this only swaps what
+  // gets rendered.
+  const effectiveRole = preview?.role ?? profile.role;
+  const effectiveDepartmentName = preview ? (previewDepartment?.name ?? null) : (department?.name ?? null);
+
   return (
     <div className="flex min-h-screen bg-zinc-50 dark:bg-zinc-950">
-      <Sidebar role={profile.role} departmentName={department?.name ?? null} />
+      <Sidebar
+        role={effectiveRole}
+        departmentName={effectiveDepartmentName}
+        canPreview={canPreview}
+        isPreviewing={preview !== null}
+        departments={departments}
+      />
       <div className="flex min-w-0 flex-1 flex-col">
+        {preview && previewDepartment && (
+          <PreviewBanner role={preview.role} departmentName={previewDepartment.name} />
+        )}
         <TopBar fullName={profile.full_name} email={profile.email} role={profile.role} />
         <main className="flex-1 overflow-y-auto p-6">{children}</main>
       </div>

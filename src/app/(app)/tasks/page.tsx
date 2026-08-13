@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getTaskList } from "@/lib/queries";
 import { getCurrentProfile } from "@/lib/get-current-profile";
+import { getPreview } from "@/lib/get-preview";
 import { TaskCard } from "@/components/tasks/task-card";
 import { EmptyState } from "@/components/ui/card";
 import { TASK_STATUS_LABELS, type TaskStatus } from "@/lib/types";
@@ -22,11 +23,22 @@ export default async function TasksPage({
   searchParams: Promise<{ status?: string }>;
 }) {
   const { status } = await searchParams;
-  const [tasks, current] = await Promise.all([
-    getTaskList({ status: status && status !== "all" ? status : undefined }),
-    getCurrentProfile(),
-  ]);
-  const canCreate = current?.profile.role !== "employee";
+  const current = await getCurrentProfile();
+  const preview =
+    current?.profile.role === "boss_boss" || current?.profile.role === "supervisor"
+      ? await getPreview()
+      : null;
+
+  const tasks = await getTaskList({
+    status: status && status !== "all" ? status : undefined,
+    // Boss/Supervisor see every task via RLS regardless — this app-level
+    // filter is what actually narrows the list while previewing, since RLS
+    // itself has no reason to restrict a privileged real identity. Not
+    // previewing: no filter needed, RLS already scopes real non-boss users
+    // correctly on its own.
+    departmentId: preview?.departmentId,
+  });
+  const canCreate = current?.profile.role !== "employee" && !preview;
 
   return (
     <div className="flex flex-col gap-4">

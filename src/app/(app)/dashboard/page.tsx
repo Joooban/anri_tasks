@@ -1,7 +1,8 @@
 import type { ReactNode } from "react";
 import { redirect } from "next/navigation";
 import { getCurrentProfile } from "@/lib/get-current-profile";
-import { getFullAccountDepartments } from "@/lib/queries";
+import { getPreview } from "@/lib/get-preview";
+import { getDepartments, getFullAccountDepartments } from "@/lib/queries";
 import {
   getCompletionRate,
   getDepartmentHealthGrid,
@@ -23,6 +24,20 @@ export default async function DashboardPage() {
   const current = await getCurrentProfile();
   if (!current) redirect("/login");
   const { profile } = current;
+
+  const preview =
+    profile.role === "boss_boss" || profile.role === "supervisor" ? await getPreview() : null;
+
+  if (preview) {
+    const departments = await getDepartments();
+    const previewDepartment = departments.find((d) => d.id === preview.departmentId);
+    return (
+      <DepartmentDashboard
+        departmentId={preview.departmentId}
+        departmentName={previewDepartment?.name ?? null}
+      />
+    );
+  }
 
   if (profile.role === "boss_boss" || profile.role === "supervisor") {
     const departments = await getFullAccountDepartments();

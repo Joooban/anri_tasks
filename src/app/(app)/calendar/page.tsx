@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile } from "@/lib/get-current-profile";
+import { getPreview } from "@/lib/get-preview";
 import { departmentColor } from "@/lib/constants";
 import { CalendarView, type CalendarEventInput } from "@/components/calendar/calendar-view";
 import { CreateMeetingForm } from "@/components/calendar/create-meeting-form";
@@ -46,8 +47,12 @@ export default async function CalendarPage() {
     })),
   ];
 
+  const preview =
+    current?.profile.role === "boss_boss" || current?.profile.role === "supervisor"
+      ? await getPreview()
+      : null;
   const canPostCompanyWide = current?.profile.role === "boss_boss" || current?.profile.role === "supervisor";
-  const canCreateMeeting = current?.profile.role !== "employee";
+  const canCreateMeeting = current?.profile.role !== "employee" && !preview;
 
   return (
     <div className="flex flex-col gap-4">

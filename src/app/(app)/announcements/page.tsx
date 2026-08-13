@@ -1,13 +1,18 @@
 import { getCurrentProfile } from "@/lib/get-current-profile";
+import { getPreview } from "@/lib/get-preview";
 import { getAnnouncements } from "@/lib/dashboard-queries";
 import { AnnouncementsFeed } from "@/components/dashboard/announcements-feed";
 import { PostAnnouncementForm } from "@/components/dashboard/post-announcement-form";
 
 export default async function AnnouncementsPage() {
   const current = await getCurrentProfile();
+  const preview =
+    current?.profile.role === "boss_boss" || current?.profile.role === "supervisor"
+      ? await getPreview()
+      : null;
   const canPostCompanyWide = current?.profile.role === "boss_boss" || current?.profile.role === "supervisor";
-  const canPost = current?.profile.role !== "employee";
-  const items = await getAnnouncements(current?.profile.department_id ?? null);
+  const canPost = current?.profile.role !== "employee" && !preview;
+  const items = await getAnnouncements(preview?.departmentId ?? current?.profile.department_id ?? null);
 
   return (
     <div className="flex flex-col gap-4">
