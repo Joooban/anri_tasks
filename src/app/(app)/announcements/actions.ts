@@ -30,10 +30,14 @@ export async function postAnnouncement(
   const pinned = formData.get("pinned") === "on";
   const companyWide = formData.get("company_wide") === "on";
   const publishAtRaw = (formData.get("publish_at") as string) || null;
+  const expiresAtRaw = (formData.get("expires_at") as string) || null;
   const canPostCompanyWide = profile.role === "boss_boss" || profile.role === "supervisor";
 
   if (!title || !body) return { error: "Title and body are required." };
   if (!companyWide && !profile.department_id) return { error: "No department to post under." };
+  if (publishAtRaw && expiresAtRaw && expiresAtRaw <= publishAtRaw) {
+    return { error: "The expiry time has to be after the publish time." };
+  }
 
   const { error } = await supabase.from("announcements").insert({
     department_id: companyWide && canPostCompanyWide ? null : profile.department_id,
@@ -44,6 +48,8 @@ export async function postAnnouncement(
     // Leave unset to post immediately (column defaults to now()); a future
     // timestamp here holds the announcement back until that moment.
     ...(publishAtRaw ? { publish_at: publishAtRaw } : {}),
+    // Leave unset for an announcement with no expiry.
+    expires_at: expiresAtRaw,
   });
 
   if (error) return { error: friendlyError(error, "We couldn't post the announcement") };

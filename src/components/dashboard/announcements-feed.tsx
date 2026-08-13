@@ -25,6 +25,13 @@ export function AnnouncementsFeed({ items }: { items: AnnouncementItem[] }) {
                   hour: "numeric",
                   minute: "2-digit",
                 })}
+                {item.expires_at &&
+                  ` · Expires ${new Date(item.expires_at).toLocaleString(undefined, {
+                    month: "short",
+                    day: "numeric",
+                    hour: "numeric",
+                    minute: "2-digit",
+                  })}`}
               </p>
             </li>
           ))}

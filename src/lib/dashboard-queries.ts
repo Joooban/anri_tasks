@@ -154,16 +154,19 @@ export interface AnnouncementItem {
   pinned: boolean;
   created_at: string;
   publish_at: string;
+  expires_at: string | null;
   department: { name: string } | null;
   author: { full_name: string | null; email: string } | null;
 }
 
 export async function getAnnouncements(departmentId?: string | null): Promise<AnnouncementItem[]> {
   const supabase = await createClient();
+  const nowIso = new Date().toISOString();
   let query = supabase
     .from("announcements")
     .select("*, department:departments(name), author:profiles(full_name,email)")
-    .lte("publish_at", new Date().toISOString())
+    .lte("publish_at", nowIso)
+    .or(`expires_at.is.null,expires_at.gt.${nowIso}`)
     .order("pinned", { ascending: false })
     .order("publish_at", { ascending: false })
     .limit(20);

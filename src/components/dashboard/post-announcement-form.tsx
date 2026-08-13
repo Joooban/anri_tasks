@@ -39,23 +39,29 @@ export function PostAnnouncementForm({ canPostCompanyWide }: { canPostCompanyWid
         rows={3}
         className="rounded-md border border-zinc-300 bg-white px-2 py-1.5 text-sm dark:border-zinc-700 dark:bg-zinc-900"
       />
-      <div className="flex flex-wrap items-end gap-4">
-        <div className="flex items-center gap-4 text-xs text-zinc-600 dark:text-zinc-400">
+      <div className="flex items-center gap-4 text-xs text-zinc-600 dark:text-zinc-400">
+        <label className="flex items-center gap-1.5">
+          <input type="checkbox" name="pinned" />
+          Pin to top
+        </label>
+        {canPostCompanyWide && (
           <label className="flex items-center gap-1.5">
-            <input type="checkbox" name="pinned" />
-            Pin to top
+            <input type="checkbox" name="company_wide" />
+            Company-wide
           </label>
-          {canPostCompanyWide && (
-            <label className="flex items-center gap-1.5">
-              <input type="checkbox" name="company_wide" />
-              Company-wide
-            </label>
-          )}
-        </div>
+        )}
+      </div>
+      <div className="flex flex-wrap gap-4">
         <LocalDateTimeField
           id="publish_at"
           name="publish_at"
           label="Publish at (optional — leave blank to post now)"
+          className="rounded-md border border-zinc-300 bg-white px-2 py-1.5 text-xs dark:border-zinc-700 dark:bg-zinc-900"
+        />
+        <LocalDateTimeField
+          id="expires_at"
+          name="expires_at"
+          label="Expires at (optional — leave blank to never expire)"
           className="rounded-md border border-zinc-300 bg-white px-2 py-1.5 text-xs dark:border-zinc-700 dark:bg-zinc-900"
         />
       </div>
