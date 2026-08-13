@@ -26,6 +26,19 @@ export async function confirmStep(taskId: string, assigneeId: string) {
   return { error: null };
 }
 
+// For the one case where requires_confirmation was set on what turned out
+// to be the last step in the chain — no next assignee exists to confirm
+// it, so the step's own assignee (who submitted it) finalizes it
+// themselves rather than the President having to step in. See
+// 0017_self_resolve_unconfirmable_step.sql.
+export async function finishUnconfirmableStep(taskId: string, assigneeId: string) {
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("finish_unconfirmable_step_rpc", { p_assignee_id: assigneeId });
+  if (error) return { error: friendlyError(error, "We couldn't finish that step") };
+  revalidateTaskRelatedPaths(taskId);
+  return { error: null };
+}
+
 export async function blockStep(taskId: string, assigneeId: string, notes: string) {
   const supabase = await createClient();
   const { error } = await supabase.rpc("block_step_rpc", { p_assignee_id: assigneeId, p_notes: notes || null });

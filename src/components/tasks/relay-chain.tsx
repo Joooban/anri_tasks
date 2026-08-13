@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import { Badge } from "@/components/ui/badge";
 import { STEP_STATUS_BADGE } from "@/lib/constants";
 import { STEP_STATUS_LABELS, type Role } from "@/lib/types";
-import { completeStep, confirmStep, blockStep, unblockStep } from "@/app/(app)/tasks/[id]/actions";
+import { completeStep, confirmStep, blockStep, unblockStep, finishUnconfirmableStep } from "@/app/(app)/tasks/[id]/actions";
 import { PersonLabel } from "@/components/ui/person-label";
 import type { TaskDetailAssignee } from "@/lib/queries";
 
@@ -71,11 +71,17 @@ export function RelayChain({
             step.status === "pending_approval" &&
             (() => {
               const next = steps.find((s) => s.step_order === step.step_order + 1);
-              // No next step to confirm it (shouldn't be creatable anymore,
-              // but may already exist) — only an admin can clear it.
-              if (!next) return isPrivileged;
-              return isRealAssignee(next);
+              return next ? isRealAssignee(next) : false;
             })()
+          }
+          // Nobody is next in the chain to confirm it (a leftover from
+          // before the chain-builder stopped allowing this) — the step's
+          // own assignee, who submitted it, finalizes it themselves rather
+          // than an admin stepping in on their behalf.
+          canFinishUnconfirmable={
+            step.status === "pending_approval" &&
+            !steps.some((s) => s.step_order === step.step_order + 1) &&
+            isRealAssignee(step)
           }
         />
       ))}
@@ -89,6 +95,7 @@ function StepRow({
   canCompleteThis,
   canBlockOrUnblockThis,
   canConfirmThis,
+  canFinishUnconfirmable,
 }: {
   taskId: string;
   step: TaskDetailAssignee;
@@ -96,6 +103,7 @@ function StepRow({
   canCompleteThis: boolean;
   canBlockOrUnblockThis: boolean;
   canConfirmThis: boolean;
+  canFinishUnconfirmable: boolean;
 }) {
   const [pending, startTransition] = useTransition();
   const [blocking, setBlocking] = useState(false);
@@ -227,6 +235,21 @@ function StepRow({
             className="rounded-lg bg-amber-500 px-3 py-1 text-xs font-medium text-white hover:bg-amber-600 disabled:opacity-60"
           >
             Confirm &amp; complete
+          </button>
+        </div>
+      )}
+
+      {isPendingApproval && canFinishUnconfirmable && (
+        <div className="pl-8">
+          <p className="mb-1 text-xs text-zinc-500 dark:text-zinc-400">
+            There&apos;s no next step to confirm this — you can finish it yourself.
+          </p>
+          <button
+            disabled={pending}
+            onClick={() => run(() => finishUnconfirmableStep(taskId, step.id))}
+            className="rounded-lg bg-amber-500 px-3 py-1 text-xs font-medium text-white hover:bg-amber-600 disabled:opacity-60"
+          >
+            Finish anyway
           </button>
         </div>
       )}
