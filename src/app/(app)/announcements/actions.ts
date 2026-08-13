@@ -33,6 +33,10 @@ export async function postAnnouncement(
   const expiresAtRaw = (formData.get("expires_at") as string) || null;
   const canPostCompanyWide = profile.role === "boss_boss" || profile.role === "supervisor";
 
+  // Enforced here, not via a role check in the announcements_insert RLS
+  // policy — see the note in tasks/actions.ts createTask for why.
+  if (profile.role === "employee") return { error: "Employees can't post announcements." };
+  if (companyWide && !canPostCompanyWide) return { error: "Only the President or Supervisors can post company-wide." };
   if (!title || !body) return { error: "Title and body are required." };
   if (!companyWide && !profile.department_id) return { error: "No department to post under." };
   if (publishAtRaw && expiresAtRaw && expiresAtRaw <= publishAtRaw) {

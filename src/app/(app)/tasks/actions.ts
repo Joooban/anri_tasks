@@ -44,10 +44,19 @@ export async function createTask(
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("id, department_id")
+    .select("id, department_id, role")
     .eq("id", user.id)
     .single();
   if (!profile) return { error: "No profile found for this account." };
+  // Enforced here rather than in the tasks_insert RLS policy — every
+  // policy variant that added a role condition on top of `created_by =
+  // auth.uid()` mysteriously started rejecting valid inserts for reasons
+  // that resisted extensive live debugging (auth.uid()/role/the literal
+  // check expression all independently verified correct, yet the real
+  // insert still failed — even a full project restart didn't change it).
+  // The UI already hides task creation from employees (sidebar, /tasks/new
+  // redirect); this is the third layer.
+  if (profile.role === "employee") return { error: "Employees can't create tasks." };
 
   const raw = {
     title: String(formData.get("title") ?? ""),

@@ -31,7 +31,12 @@ export async function createMeeting(
   const meetingLink = (formData.get("meeting_link") as string) || null;
   const description = (formData.get("description") as string) || null;
   const isCompanyWide = formData.get("company_wide") === "on";
+  const canPostCompanyWide = profile.role === "boss_boss" || profile.role === "supervisor";
 
+  // Enforced here, not via a role check in the calendar_events_insert RLS
+  // policy — see the note in tasks/actions.ts createTask for why.
+  if (profile.role === "employee") return { error: "Employees can't add meetings." };
+  if (isCompanyWide && !canPostCompanyWide) return { error: "Only the President or Supervisors can post company-wide." };
   if (!title || !startAt) return { error: "Title and start time are required." };
 
   const { error } = await supabase.from("calendar_events").insert({
