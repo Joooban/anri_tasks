@@ -92,6 +92,14 @@ export function CalendarView({
         }}
         height="auto"
         dayMaxEvents={4}
+        // Forces every event to use the compact dot+title style. Without
+        // this, FullCalendar's default "auto" display mode renders some
+        // events (its all-day-vs-timed inference isn't always consistent
+        // with how these deadlines get parsed) as full-width block bars
+        // instead — visually inconsistent with everything else on the
+        // same day, and misleading since nothing here actually spans
+        // multiple days.
+        eventDisplay="list-item"
         events={events}
         eventContent={renderEventContent}
         eventClick={handleEventClick}

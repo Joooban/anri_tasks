@@ -26,6 +26,7 @@ export default async function CalendarPage() {
       id: `task-${t.id}`,
       title: t.title,
       start: t.deadline as string,
+      allDay: false,
       color: taskCalendarColor(t.status as TaskStatus, t.deadline, t.creator_department_id),
       extendedProps: {
         type: "task" as const,
