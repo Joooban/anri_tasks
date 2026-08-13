@@ -2,6 +2,18 @@ import { createClient } from "@/lib/supabase/server";
 import type { HealthStatus } from "@/lib/constants";
 import type { Department } from "@/lib/types";
 
+type SupabaseClient = Awaited<ReturnType<typeof createClient>>;
+
+// A task counts toward a department's stats if that department created it
+// OR is anywhere in its assignee chain (see task_departments view,
+// 0008_department_task_attribution.sql) — not just creator, since the most
+// common case is a task the President/Supervisor assigns to a department
+// they don't themselves belong to.
+async function getDepartmentTaskIds(supabase: SupabaseClient, departmentId: string): Promise<string[]> {
+  const { data } = await supabase.from("task_departments").select("task_id").eq("department_id", departmentId);
+  return Array.from(new Set((data ?? []).map((r) => r.task_id)));
+}
+
 export interface CompletionRate {
   completed: number;
   total: number;
@@ -15,7 +27,11 @@ export async function getCompletionRate(days: number, departmentId?: string): Pr
   const since = new Date(Date.now() - days * 86_400_000).toISOString();
 
   let query = supabase.from("tasks").select("status", { count: "exact" }).gte("created_at", since);
-  if (departmentId) query = query.eq("creator_department_id", departmentId);
+  if (departmentId) {
+    const taskIds = await getDepartmentTaskIds(supabase, departmentId);
+    if (taskIds.length === 0) return { completed: 0, total: 0, percent: 0 };
+    query = query.in("id", taskIds);
+  }
 
   const { data } = await query;
   const total = data?.length ?? 0;
@@ -42,7 +58,11 @@ export async function getRecentlyCompleted(limit = 8, departmentId?: string): Pr
     .order("updated_at", { ascending: false })
     .limit(limit);
 
-  if (departmentId) query = query.eq("creator_department_id", departmentId);
+  if (departmentId) {
+    const taskIds = await getDepartmentTaskIds(supabase, departmentId);
+    if (taskIds.length === 0) return [];
+    query = query.in("id", taskIds);
+  }
 
   const { data } = await query;
   return data ?? [];
@@ -67,7 +87,11 @@ export async function getOverdueAndBlockedTasks(departmentId?: string): Promise<
     .or(`status.eq.blocked,deadline.lt.${nowIso}`)
     .order("deadline", { ascending: true });
 
-  if (departmentId) query = query.eq("creator_department_id", departmentId);
+  if (departmentId) {
+    const taskIds = await getDepartmentTaskIds(supabase, departmentId);
+    if (taskIds.length === 0) return [];
+    query = query.in("id", taskIds);
+  }
 
   const { data } = await query;
   return (data ?? []) as unknown as OverdueBlockedTask[];
@@ -93,7 +117,11 @@ export async function getUpcomingDeadlines(days = 14, departmentId?: string): Pr
     .lte("deadline", until)
     .order("deadline", { ascending: true });
 
-  if (departmentId) query = query.eq("creator_department_id", departmentId);
+  if (departmentId) {
+    const taskIds = await getDepartmentTaskIds(supabase, departmentId);
+    if (taskIds.length === 0) return [];
+    query = query.in("id", taskIds);
+  }
 
   const { data } = await query;
   return (data ?? []) as unknown as UpcomingDeadlineTask[];
@@ -119,16 +147,17 @@ export async function getDepartmentHealthGrid(departments: Department[]): Promis
 
   const results = await Promise.all(
     fullAccountDepts.map(async (dept) => {
+      const taskIds = await getDepartmentTaskIds(supabase, dept.id);
+      if (taskIds.length === 0) {
+        return { department: dept, health: "green" as HealthStatus, overdueCount: 0, blockedCount: 0, dueSoonCount: 0, doneThisWeekCount: 0 };
+      }
+
       const [{ data }, { count: doneThisWeekCount }] = await Promise.all([
-        supabase
-          .from("tasks")
-          .select("status,deadline")
-          .eq("creator_department_id", dept.id)
-          .not("status", "in", "(done,cancelled)"),
+        supabase.from("tasks").select("status,deadline").in("id", taskIds).not("status", "in", "(done,cancelled)"),
         supabase
           .from("tasks")
           .select("id", { count: "exact", head: true })
-          .eq("creator_department_id", dept.id)
+          .in("id", taskIds)
           .eq("status", "done")
           .gte("updated_at", weekAgo),
       ]);

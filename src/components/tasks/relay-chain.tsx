@@ -36,10 +36,22 @@ export function RelayChain({
 }) {
   const isPrivileged = myRole === "boss_boss" || myRole === "supervisor";
 
-  function canAct(step: TaskDetailAssignee): boolean {
-    if (isPrivileged) return true;
+  // No privileged bypass here on purpose: completing or confirming a step
+  // is attributed to whoever clicks it (completed_by in the audit trail),
+  // so it has to actually be that step's assignee — otherwise the
+  // President completing HR's step on their behalf would misrepresent who
+  // did the work. Matches the task_assignees_update RLS policy
+  // (0008_department_task_attribution.sql).
+  function isRealAssignee(step: TaskDetailAssignee): boolean {
     if (step.profile_id === myProfileId) return true;
     return Boolean(step.department_id) && step.department_id === myDepartmentId;
+  }
+
+  // Blocking/unblocking a stuck step is a legitimate administrative
+  // override, unlike completing someone else's work — Boss/Supervisor keep
+  // this.
+  function canBlockOrUnblock(step: TaskDetailAssignee): boolean {
+    return isRealAssignee(step) || isPrivileged;
   }
 
   return (
@@ -50,12 +62,13 @@ export function RelayChain({
           taskId={taskId}
           step={step}
           isFirst={index === 0}
-          canActOnThis={canAct(step)}
+          canCompleteThis={isRealAssignee(step)}
+          canBlockOrUnblockThis={canBlockOrUnblock(step)}
           canConfirmThis={
             step.status === "pending_approval" &&
             (() => {
               const next = steps.find((s) => s.step_order === step.step_order + 1);
-              return next ? canAct(next) : isPrivileged;
+              return next ? isRealAssignee(next) : false;
             })()
           }
         />
@@ -67,13 +80,15 @@ export function RelayChain({
 function StepRow({
   taskId,
   step,
-  canActOnThis,
+  canCompleteThis,
+  canBlockOrUnblockThis,
   canConfirmThis,
 }: {
   taskId: string;
   step: TaskDetailAssignee;
   isFirst: boolean;
-  canActOnThis: boolean;
+  canCompleteThis: boolean;
+  canBlockOrUnblockThis: boolean;
   canConfirmThis: boolean;
 }) {
   const [pending, startTransition] = useTransition();
@@ -133,26 +148,30 @@ function StepRow({
 
       {error && <p className="pl-8 text-xs text-red-500">{error}</p>}
 
-      {isActive && canActOnThis && (
+      {isActive && (canCompleteThis || canBlockOrUnblockThis) && (
         <div className="flex flex-wrap gap-2 pl-8">
-          <button
-            disabled={pending}
-            onClick={() => run(() => completeStep(taskId, step.id, step.requires_confirmation))}
-            className="rounded-lg bg-emerald-600 px-3 py-1 text-xs font-medium text-white hover:bg-emerald-700 disabled:opacity-60"
-          >
-            {step.requires_confirmation ? "Submit for confirmation" : "Mark done"}
-          </button>
-          <button
-            disabled={pending}
-            onClick={() => setBlocking((v) => !v)}
-            className="rounded-lg bg-red-50 px-3 py-1 text-xs font-medium text-red-600 hover:bg-red-100 dark:bg-red-950 dark:text-red-400"
-          >
-            Mark blocked
-          </button>
+          {canCompleteThis && (
+            <button
+              disabled={pending}
+              onClick={() => run(() => completeStep(taskId, step.id, step.requires_confirmation))}
+              className="rounded-lg bg-emerald-600 px-3 py-1 text-xs font-medium text-white hover:bg-emerald-700 disabled:opacity-60"
+            >
+              {step.requires_confirmation ? "Submit for confirmation" : "Mark done"}
+            </button>
+          )}
+          {canBlockOrUnblockThis && (
+            <button
+              disabled={pending}
+              onClick={() => setBlocking((v) => !v)}
+              className="rounded-lg bg-red-50 px-3 py-1 text-xs font-medium text-red-600 hover:bg-red-100 dark:bg-red-950 dark:text-red-400"
+            >
+              Mark blocked
+            </button>
+          )}
         </div>
       )}
 
-      {isActive && canActOnThis && blocking && (
+      {isActive && canBlockOrUnblockThis && blocking && (
         <div className="flex flex-wrap items-center gap-2 pl-8">
           <input
             value={notes}
@@ -170,7 +189,7 @@ function StepRow({
         </div>
       )}
 
-      {isBlocked && canActOnThis && (
+      {isBlocked && canBlockOrUnblockThis && (
         <div className="pl-8">
           <button
             disabled={pending}
