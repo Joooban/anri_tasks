@@ -48,14 +48,6 @@ export async function createTask(
     .eq("id", user.id)
     .single();
   if (!profile) return { error: "No profile found for this account." };
-  // Enforced here rather than in the tasks_insert RLS policy — every
-  // policy variant that added a role condition on top of `created_by =
-  // auth.uid()` mysteriously started rejecting valid inserts for reasons
-  // that resisted extensive live debugging (auth.uid()/role/the literal
-  // check expression all independently verified correct, yet the real
-  // insert still failed — even a full project restart didn't change it).
-  // The UI already hides task creation from employees (sidebar, /tasks/new
-  // redirect); this is the third layer.
   if (profile.role === "employee") return { error: "Employees can't create tasks." };
 
   const raw = {
@@ -74,69 +66,32 @@ export async function createTask(
   }
   const input = parsed.data;
 
-  const { data: task, error: taskError } = await supabase
-    .from("tasks")
-    .insert({
-      title: input.title,
-      description: input.description || null,
-      task_type_id: input.task_type_id,
-      created_by: profile.id,
-      creator_department_id: profile.department_id,
-      deadline: input.deadline ? new Date(input.deadline).toISOString() : null,
-      is_personal: input.is_personal,
-    })
-    .select("id")
-    .single();
-
-  if (taskError || !task) {
-    return { error: friendlyError(taskError, "We couldn't create the task") };
-  }
-
-  const assigneeRows = input.chain.map((step, index) => ({
-    task_id: task.id,
-    step_order: index + 1,
-    assignee_type: step.assignee_type,
-    department_id: step.department_id,
-    profile_id: step.profile_id,
-    requires_confirmation: step.requires_confirmation,
-    status: index === 0 ? "active" : "pending",
-    started_at: index === 0 ? new Date().toISOString() : null,
-  }));
-
-  const { error: assigneeError } = await supabase.from("task_assignees").insert(assigneeRows);
-  if (assigneeError) return { error: friendlyError(assigneeError, "We couldn't set up the assignee chain") };
-
-  if (input.visibility.length > 0) {
-    const { error: visibilityError } = await supabase.from("task_visibility").insert(
-      input.visibility.map((v) => ({
-        task_id: task.id,
-        department_id: v.department_id,
-        profile_id: v.profile_id,
-      }))
-    );
-    if (visibilityError) return { error: friendlyError(visibilityError, "We couldn't save the visibility settings") };
-  }
-
-  // First step starts 'active' via direct insert above rather than an
-  // update, so the auto-advance trigger (which only fires on UPDATE) never
-  // runs for it — log its activation explicitly here to keep the audit
-  // trail complete.
-  await supabase.from("audit_log").insert({
-    task_id: task.id,
-    actor_id: profile.id,
-    action: "step_activated",
-    details: { step_order: 1 },
+  // Task + assignee chain + visibility + audit log all happen atomically
+  // inside this one SECURITY DEFINER function rather than as separate
+  // client-side inserts — see 0013_create_task_rpc.sql for why.
+  const { data: taskId, error: rpcError } = await supabase.rpc("create_task_rpc", {
+    p_title: input.title,
+    p_description: input.description || null,
+    p_task_type_id: input.task_type_id,
+    p_deadline: input.deadline ? new Date(input.deadline).toISOString() : null,
+    p_is_personal: input.is_personal,
+    p_chain: input.chain,
+    p_visibility: input.visibility,
   });
+
+  if (rpcError || !taskId) {
+    return { error: friendlyError(rpcError, "We couldn't create the task") };
+  }
 
   const files = formData.getAll("attachments").filter((f): f is File => f instanceof File && f.size > 0);
   for (const file of files) {
-    const path = `${task.id}/${Date.now()}-${file.name}`;
+    const path = `${taskId}/${Date.now()}-${file.name}`;
     const { error: uploadError } = await supabase.storage
       .from("task-attachments")
       .upload(path, file);
     if (!uploadError) {
       await supabase.from("task_attachments").insert({
-        task_id: task.id,
+        task_id: taskId,
         storage_path: path,
         file_name: file.name,
         file_size: file.size,
@@ -147,5 +102,5 @@ export async function createTask(
   }
 
   revalidateTaskRelatedPaths();
-  redirect(`/tasks/${task.id}`);
+  redirect(`/tasks/${taskId}`);
 }
