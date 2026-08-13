@@ -2,15 +2,14 @@ import { createClient } from "@/lib/supabase/server";
 import { getFullAccountDepartments } from "@/lib/queries";
 import { HistoryItem } from "@/components/history/history-item";
 import { EmptyState } from "@/components/ui/card";
-import clsx from "clsx";
 import Link from "next/link";
 
 export default async function HistoryPage({
   searchParams,
 }: {
-  searchParams: Promise<{ department?: string }>;
+  searchParams: Promise<{ department?: string; from?: string; to?: string }>;
 }) {
-  const { department } = await searchParams;
+  const { department, from, to } = await searchParams;
   const supabase = await createClient();
   const departments = await getFullAccountDepartments();
 
@@ -22,6 +21,12 @@ export default async function HistoryPage({
     .limit(100);
 
   if (department) query = query.eq("creator_department_id", department);
+  // Date-only inputs, interpreted as calendar-day bounds server-side — a
+  // few hours of timezone fuzziness at the boundary is an acceptable
+  // trade-off for a history filter (unlike task deadlines, nothing here
+  // depends on exact precision).
+  if (from) query = query.gte("updated_at", new Date(`${from}T00:00:00`).toISOString());
+  if (to) query = query.lte("updated_at", new Date(`${to}T23:59:59.999`).toISOString());
 
   const { data: tasks } = await query;
   const taskIds = (tasks ?? []).map((t) => t.id);
@@ -41,41 +46,78 @@ export default async function HistoryPage({
     auditByTask.set(row.task_id, list);
   }
 
+  const hasFilters = Boolean(department || from || to);
+
   return (
     <div className="flex flex-col gap-4">
       <h1 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">History</h1>
 
-      <div className="flex flex-wrap gap-1.5">
-        <Link
-          href="/history"
-          className={clsx(
-            "rounded-full px-3 py-1 text-xs font-medium",
-            !department
-              ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900"
-              : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300"
-          )}
-        >
-          All departments
-        </Link>
-        {departments.map((d) => (
-          <Link
-            key={d.id}
-            href={`/history?department=${d.id}`}
-            className={clsx(
-              "rounded-full px-3 py-1 text-xs font-medium",
-              department === d.id
-                ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900"
-                : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300"
-            )}
+      <form className="flex flex-wrap items-end gap-3 rounded-xl border border-zinc-200 bg-white p-3 dark:border-zinc-800 dark:bg-zinc-900">
+        <div className="flex flex-col gap-1">
+          <label htmlFor="department" className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
+            Department
+          </label>
+          <select
+            id="department"
+            name="department"
+            defaultValue={department ?? ""}
+            className="min-w-[10rem] rounded-md border border-zinc-300 bg-white px-2 py-1.5 text-sm dark:border-zinc-700 dark:bg-zinc-900"
           >
-            {d.name}
+            <option value="">All departments</option>
+            {departments.map((d) => (
+              <option key={d.id} value={d.id}>
+                {d.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="flex flex-col gap-1">
+          <label htmlFor="from" className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
+            From
+          </label>
+          <input
+            id="from"
+            type="date"
+            name="from"
+            defaultValue={from ?? ""}
+            className="rounded-md border border-zinc-300 bg-white px-2 py-1.5 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+          />
+        </div>
+
+        <div className="flex flex-col gap-1">
+          <label htmlFor="to" className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
+            To
+          </label>
+          <input
+            id="to"
+            type="date"
+            name="to"
+            defaultValue={to ?? ""}
+            className="rounded-md border border-zinc-300 bg-white px-2 py-1.5 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+          />
+        </div>
+
+        <button
+          type="submit"
+          className="rounded-lg bg-zinc-900 px-4 py-1.5 text-sm font-medium text-white hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
+        >
+          Filter
+        </button>
+
+        {hasFilters && (
+          <Link
+            href="/history"
+            className="rounded-lg px-3 py-1.5 text-sm font-medium text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-50"
+          >
+            Clear
           </Link>
-        ))}
-      </div>
+        )}
+      </form>
 
       {!tasks || tasks.length === 0 ? (
         <EmptyState>
-          <p>No completed or cancelled tasks yet.</p>
+          <p>{hasFilters ? "No tasks match these filters." : "No completed or cancelled tasks yet."}</p>
         </EmptyState>
       ) : (
         <div className="flex flex-col gap-2">
