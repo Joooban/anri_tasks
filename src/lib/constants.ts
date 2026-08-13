@@ -42,6 +42,21 @@ export function departmentColorSoft(departmentId: string | null | undefined): st
   return `hsl(${hue} 70% 92%)`;
 }
 
+// Calendar task events use department color for normal work, but override
+// it for anything that needs to stand out at a glance while scanning a
+// month view — done (so it visibly stops competing for attention), blocked,
+// and overdue all take priority over "which department is this."
+export function taskCalendarColor(
+  status: TaskStatus,
+  deadline: string | null,
+  departmentId: string | null
+): string {
+  if (status === "done") return "hsl(220 10% 75%)";
+  if (status === "blocked") return "hsl(0 70% 50%)";
+  if (deadline && deadline < new Date().toISOString() && status !== "cancelled") return "hsl(25 85% 50%)";
+  return departmentColor(departmentId);
+}
+
 export const HEALTH_COLORS = {
   green: "bg-emerald-500",
   yellow: "bg-amber-500",

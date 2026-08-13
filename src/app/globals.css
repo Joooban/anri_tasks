@@ -28,3 +28,27 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Tells the browser which palette to use for chrome it renders itself —
+   native <select> dropdowns, scrollbars, date pickers. Without this, a
+   <select> styled with our dark classes still opens its native options
+   list in the OS's default (usually light) scheme, while the text color it
+   inherits is our light-mode-on-dark text — white text on a white
+   dropdown. */
+:root {
+  color-scheme: light;
+}
+.dark {
+  color-scheme: dark;
+}
+
+/* Tailwind's Preflight resets buttons to `cursor: default`, which strips
+   the pointer cursor most users rely on to tell an element is clickable.
+   Restored globally rather than per-component so nothing gets missed. */
+button:not(:disabled),
+[role="button"]:not(:disabled) {
+  cursor: pointer;
+}
+button:disabled {
+  cursor: not-allowed;
+}

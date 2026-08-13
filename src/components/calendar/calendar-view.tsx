@@ -7,7 +7,9 @@ import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import listPlugin from "@fullcalendar/list";
 import interactionPlugin from "@fullcalendar/interaction";
-import type { EventClickArg } from "@fullcalendar/core";
+import type { EventClickArg, EventContentArg } from "@fullcalendar/core";
+import clsx from "clsx";
+import type { TaskStatus } from "@/lib/types";
 
 export interface CalendarEventInput {
   id: string;
@@ -19,12 +21,46 @@ export interface CalendarEventInput {
   extendedProps: {
     type: "task" | "meeting";
     taskId?: string;
+    taskStatus?: TaskStatus;
     meetingLink?: string | null;
     departmentName?: string | null;
   };
 }
 
-export function CalendarView({ events }: { events: CalendarEventInput[] }) {
+export interface DepartmentLegendEntry {
+  id: string | null;
+  name: string;
+  color: string;
+}
+
+function renderEventContent(arg: EventContentArg) {
+  const props = arg.event.extendedProps as CalendarEventInput["extendedProps"];
+  const isDone = props.taskStatus === "done";
+  const isBlocked = props.taskStatus === "blocked";
+  const isOverdue =
+    !isDone &&
+    !isBlocked &&
+    props.type === "task" &&
+    arg.event.start &&
+    arg.event.start.getTime() < Date.now();
+
+  return (
+    <div className={clsx("flex min-w-0 items-center gap-1 px-0.5", isDone && "opacity-60")}>
+      <span className="shrink-0 text-[0.7rem]">
+        {props.type === "meeting" ? "🗓️" : isBlocked ? "🚫" : isOverdue ? "⚠️" : "📋"}
+      </span>
+      <span className={clsx("truncate", isDone && "line-through")}>{arg.event.title}</span>
+    </div>
+  );
+}
+
+export function CalendarView({
+  events,
+  departmentLegend,
+}: {
+  events: CalendarEventInput[];
+  departmentLegend: DepartmentLegendEntry[];
+}) {
   const router = useRouter();
   const [selected, setSelected] = useState<CalendarEventInput | null>(null);
 
@@ -55,7 +91,9 @@ export function CalendarView({ events }: { events: CalendarEventInput[] }) {
           right: "dayGridMonth,timeGridWeek,listMonth",
         }}
         height="auto"
+        dayMaxEvents={4}
         events={events}
+        eventContent={renderEventContent}
         eventClick={handleEventClick}
       />
 
@@ -81,6 +119,27 @@ export function CalendarView({ events }: { events: CalendarEventInput[] }) {
           )}
         </div>
       )}
+
+      <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1.5 border-t border-zinc-100 pt-3 text-xs text-zinc-500 dark:border-zinc-800 dark:text-zinc-400">
+        <span className="flex items-center gap-1">
+          <span className="h-2 w-2 rounded-full" style={{ background: "hsl(25 85% 50%)" }} />
+          Overdue
+        </span>
+        <span className="flex items-center gap-1">
+          <span className="h-2 w-2 rounded-full" style={{ background: "hsl(0 70% 50%)" }} />
+          Blocked
+        </span>
+        <span className="flex items-center gap-1">
+          <span className="h-2 w-2 rounded-full" style={{ background: "hsl(220 10% 75%)" }} />
+          Done
+        </span>
+        {departmentLegend.map((d) => (
+          <span key={d.id ?? "none"} className="flex items-center gap-1">
+            <span className="h-2 w-2 rounded-full" style={{ background: d.color }} />
+            {d.name}
+          </span>
+        ))}
+      </div>
     </div>
   );
 }

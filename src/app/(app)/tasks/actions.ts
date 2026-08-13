@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { friendlyError } from "@/lib/friendly-error";
+import { revalidateTaskRelatedPaths } from "@/lib/revalidate-task-paths";
 
 const chainStepSchema = z.object({
   assignee_type: z.enum(["department", "individual"]),
@@ -136,5 +137,6 @@ export async function createTask(
     }
   }
 
+  revalidateTaskRelatedPaths();
   redirect(`/tasks/${task.id}`);
 }

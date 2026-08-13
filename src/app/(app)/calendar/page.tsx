@@ -1,9 +1,10 @@
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile } from "@/lib/get-current-profile";
 import { getPreview } from "@/lib/get-preview";
-import { departmentColor } from "@/lib/constants";
+import { departmentColor, taskCalendarColor } from "@/lib/constants";
 import { CalendarView, type CalendarEventInput } from "@/components/calendar/calendar-view";
 import { CreateMeetingForm } from "@/components/calendar/create-meeting-form";
+import type { TaskStatus } from "@/lib/types";
 
 export default async function CalendarPage() {
   const current = await getCurrentProfile();
@@ -12,7 +13,7 @@ export default async function CalendarPage() {
   const [{ data: tasks }, { data: meetings }] = await Promise.all([
     supabase
       .from("tasks")
-      .select("id,title,deadline,creator_department_id,creator_department:departments(name)")
+      .select("id,title,deadline,status,creator_department_id,creator_department:departments(name)")
       .not("deadline", "is", null)
       .not("status", "in", "(cancelled)"),
     supabase
@@ -25,10 +26,11 @@ export default async function CalendarPage() {
       id: `task-${t.id}`,
       title: t.title,
       start: t.deadline as string,
-      color: departmentColor(t.creator_department_id),
+      color: taskCalendarColor(t.status as TaskStatus, t.deadline, t.creator_department_id),
       extendedProps: {
         type: "task" as const,
         taskId: t.id,
+        taskStatus: t.status as TaskStatus,
         departmentName: (t.creator_department as unknown as { name: string } | null)?.name ?? null,
       },
     })),
@@ -47,6 +49,21 @@ export default async function CalendarPage() {
     })),
   ];
 
+  const departmentLegend = Array.from(
+    new Map(
+      (tasks ?? [])
+        .filter((t) => t.status !== "done" && t.status !== "blocked")
+        .map((t) => [
+          t.creator_department_id,
+          {
+            id: t.creator_department_id,
+            name: (t.creator_department as unknown as { name: string } | null)?.name ?? "Unassigned",
+            color: departmentColor(t.creator_department_id),
+          },
+        ])
+    ).values()
+  );
+
   const preview =
     current?.profile.role === "boss_boss" || current?.profile.role === "supervisor"
       ? await getPreview()
@@ -60,7 +77,7 @@ export default async function CalendarPage() {
         <h1 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">Calendar</h1>
         {canCreateMeeting && <CreateMeetingForm canPostCompanyWide={canPostCompanyWide} />}
       </div>
-      <CalendarView events={events} />
+      <CalendarView events={events} departmentLegend={departmentLegend} />
     </div>
   );
 }
