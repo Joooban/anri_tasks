@@ -8,6 +8,7 @@ import { RelayChain } from "@/components/tasks/relay-chain";
 import { CopyForViberButton } from "@/components/tasks/copy-for-viber-button";
 import { CommentsSection } from "@/components/tasks/comments-section";
 import { Card, CardTitle } from "@/components/ui/card";
+import { PersonLabel } from "@/components/ui/person-label";
 import { cancelTask } from "@/app/(app)/tasks/[id]/actions";
 
 export default async function TaskDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -51,8 +52,7 @@ export default async function TaskDetailPage({ params }: { params: Promise<{ id:
           </div>
           <h1 className="text-xl font-semibold text-zinc-900 dark:text-zinc-50">{task.title}</h1>
           <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
-            Created by {task.creator?.full_name ?? task.creator?.email}
-            {task.creator_department ? ` · ${task.creator_department.name}` : ""}
+            Created by <PersonLabel person={task.creator} />
             {task.deadline &&
               ` · Due ${new Date(task.deadline).toLocaleString(undefined, {
                 month: "short",
@@ -109,7 +109,7 @@ export default async function TaskDetailPage({ params }: { params: Promise<{ id:
                 key={v.id}
                 className="rounded-full bg-zinc-100 px-2.5 py-1 text-xs text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300"
               >
-                {v.department?.name ?? v.profile?.full_name ?? v.profile?.email}
+                {v.department?.name ?? (v.profile ? <PersonLabel person={v.profile} /> : null)}
               </span>
             ))}
           </div>
@@ -159,7 +159,7 @@ export default async function TaskDetailPage({ params }: { params: Promise<{ id:
                 })}
               </span>
               <span className="text-zinc-700 dark:text-zinc-300">
-                {entry.actor?.full_name ?? entry.actor?.email ?? "System"} — {entry.action.replace(/_/g, " ")}
+                {entry.actor ? <PersonLabel person={entry.actor} /> : "System"} — {entry.action.replace(/_/g, " ")}
               </span>
             </li>
           ))}

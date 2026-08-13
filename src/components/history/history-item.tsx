@@ -3,13 +3,14 @@
 import { useState } from "react";
 import Link from "next/link";
 import { TaskStatusBadge } from "@/components/tasks/task-status-badge";
+import { PersonLabel } from "@/components/ui/person-label";
 import type { TaskStatus } from "@/lib/types";
 
 export interface HistoryAuditEntry {
   id: string;
   action: string;
   created_at: string;
-  actor: { full_name: string | null; email: string } | null;
+  actor: { full_name: string | null; email: string; department: { name: string } | null } | null;
 }
 
 export function HistoryItem({
@@ -68,7 +69,7 @@ export function HistoryItem({
                   })}
                 </span>
                 <span className="text-zinc-700 dark:text-zinc-300">
-                  {entry.actor?.full_name ?? entry.actor?.email ?? "System"} — {entry.action.replace(/_/g, " ")}
+                  {entry.actor ? <PersonLabel person={entry.actor} /> : "System"} — {entry.action.replace(/_/g, " ")}
                 </span>
               </li>
             ))

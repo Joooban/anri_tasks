@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { STEP_STATUS_BADGE } from "@/lib/constants";
 import { STEP_STATUS_LABELS, type Role } from "@/lib/types";
 import { completeStep, confirmStep, blockStep, unblockStep } from "@/app/(app)/tasks/[id]/actions";
+import { PersonLabel } from "@/components/ui/person-label";
 import type { TaskDetailAssignee } from "@/lib/queries";
 
 function formatTime(value: string | null) {
@@ -17,8 +18,10 @@ function formatTime(value: string | null) {
   });
 }
 
-function stepLabel(step: TaskDetailAssignee) {
-  return step.department?.name ?? step.profile?.full_name ?? step.profile?.email ?? "Unassigned";
+function StepLabel({ step }: { step: TaskDetailAssignee }) {
+  if (step.department) return <>{step.department.name}</>;
+  if (step.profile) return <PersonLabel person={step.profile} />;
+  return <>Unassigned</>;
 }
 
 export function RelayChain({
@@ -128,7 +131,9 @@ function StepRow({
             {step.step_order}
           </span>
           <div>
-            <p className="text-sm font-medium text-zinc-900 dark:text-zinc-50">{stepLabel(step)}</p>
+            <p className="text-sm font-medium text-zinc-900 dark:text-zinc-50">
+              <StepLabel step={step} />
+            </p>
             {step.requires_confirmation && (
               <p className="text-xs text-zinc-500 dark:text-zinc-400">Requires next step&apos;s confirmation</p>
             )}
@@ -141,9 +146,19 @@ function StepRow({
 
       {(step.completed_at || step.started_at) && (
         <p className="pl-8 text-xs text-zinc-400">
-          {step.completed_at
-            ? `Completed ${formatTime(step.completed_at)}${step.completed_by_profile ? ` by ${step.completed_by_profile.full_name ?? step.completed_by_profile.email}` : ""}`
-            : `Started ${formatTime(step.started_at)}`}
+          {step.completed_at ? (
+            <>
+              Completed {formatTime(step.completed_at)}
+              {step.completed_by_profile && (
+                <>
+                  {" "}
+                  by <PersonLabel person={step.completed_by_profile} />
+                </>
+              )}
+            </>
+          ) : (
+            `Started ${formatTime(step.started_at)}`
+          )}
         </p>
       )}
 

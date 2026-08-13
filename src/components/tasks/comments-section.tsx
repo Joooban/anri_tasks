@@ -2,12 +2,13 @@
 
 import { useState, useTransition } from "react";
 import { addComment } from "@/app/(app)/tasks/[id]/actions";
+import { PersonLabel } from "@/components/ui/person-label";
 
 export interface CommentItem {
   id: string;
   body: string;
   created_at: string;
-  author: { full_name: string | null; email: string } | null;
+  author: { full_name: string | null; email: string; department: { name: string } | null } | null;
 }
 
 export function CommentsSection({ taskId, comments }: { taskId: string; comments: CommentItem[] }) {
@@ -37,7 +38,7 @@ export function CommentsSection({ taskId, comments }: { taskId: string; comments
             <li key={c.id} className="rounded-lg bg-zinc-50 p-3 text-sm dark:bg-zinc-900/50">
               <div className="mb-1 flex items-center justify-between gap-2">
                 <span className="font-medium text-zinc-900 dark:text-zinc-50">
-                  {c.author?.full_name ?? c.author?.email ?? "Unknown"}
+                  <PersonLabel person={c.author} />
                 </span>
                 <span className="text-xs text-zinc-400">
                   {new Date(c.created_at).toLocaleString(undefined, {
