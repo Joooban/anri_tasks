@@ -68,7 +68,10 @@ export function RelayChain({
             step.status === "pending_approval" &&
             (() => {
               const next = steps.find((s) => s.step_order === step.step_order + 1);
-              return next ? isRealAssignee(next) : false;
+              // No next step to confirm it (shouldn't be creatable anymore,
+              // but may already exist) — only an admin can clear it.
+              if (!next) return isPrivileged;
+              return isRealAssignee(next);
             })()
           }
         />

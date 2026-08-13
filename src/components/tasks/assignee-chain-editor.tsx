@@ -35,16 +35,27 @@ export function AssigneeChainEditor({
     onChange(value.map((s, i) => (i === index ? { ...s, ...patch } : s)));
   }
 
+  // The last step in the chain can never require confirmation — there's no
+  // next assignee who could ever give it. Cleared automatically whenever
+  // reordering/removing changes which step is last, so stale state from
+  // before a reorder can't linger.
+  function clearLastStepConfirmation(steps: ChainStep[]): ChainStep[] {
+    if (steps.length === 0) return steps;
+    const lastIndex = steps.length - 1;
+    if (!steps[lastIndex].requires_confirmation) return steps;
+    return steps.map((s, i) => (i === lastIndex ? { ...s, requires_confirmation: false } : s));
+  }
+
   function move(index: number, dir: -1 | 1) {
     const target = index + dir;
     if (target < 0 || target >= value.length) return;
     const next = [...value];
     [next[index], next[target]] = [next[target], next[index]];
-    onChange(next);
+    onChange(clearLastStepConfirmation(next));
   }
 
   function remove(index: number) {
-    onChange(value.filter((_, i) => i !== index));
+    onChange(clearLastStepConfirmation(value.filter((_, i) => i !== index)));
   }
 
   return (
@@ -101,14 +112,16 @@ export function AssigneeChainEditor({
             </select>
           )}
 
-          <label className="flex items-center gap-1.5 text-xs text-zinc-600 dark:text-zinc-400">
-            <input
-              type="checkbox"
-              checked={step.requires_confirmation}
-              onChange={(e) => update(index, { requires_confirmation: e.target.checked })}
-            />
-            Needs next step&apos;s confirmation
-          </label>
+          {index < value.length - 1 && (
+            <label className="flex items-center gap-1.5 text-xs text-zinc-600 dark:text-zinc-400">
+              <input
+                type="checkbox"
+                checked={step.requires_confirmation}
+                onChange={(e) => update(index, { requires_confirmation: e.target.checked })}
+              />
+              Needs next step&apos;s confirmation
+            </label>
+          )}
 
           <div className="ml-auto flex items-center gap-1">
             <button
