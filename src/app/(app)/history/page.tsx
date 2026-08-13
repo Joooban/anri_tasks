@@ -61,7 +61,7 @@ export default async function HistoryPage({
             id="department"
             name="department"
             defaultValue={department ?? ""}
-            className="min-w-[10rem] rounded-md border border-zinc-300 bg-white px-2 py-1.5 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+            className="h-8 min-w-[10rem] rounded-md border border-zinc-300 bg-white px-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
           >
             <option value="">All departments</option>
             {departments.map((d) => (
@@ -81,7 +81,7 @@ export default async function HistoryPage({
             type="date"
             name="from"
             defaultValue={from ?? ""}
-            className="rounded-md border border-zinc-300 bg-white px-2 py-1.5 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+            className="h-8 rounded-md border border-zinc-300 bg-white px-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
           />
         </div>
 
@@ -94,13 +94,13 @@ export default async function HistoryPage({
             type="date"
             name="to"
             defaultValue={to ?? ""}
-            className="rounded-md border border-zinc-300 bg-white px-2 py-1.5 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+            className="h-8 rounded-md border border-zinc-300 bg-white px-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
           />
         </div>
 
         <button
           type="submit"
-          className="rounded-md bg-zinc-900 px-3 py-1 text-xs font-medium text-white hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
+          className="flex h-8 items-center rounded-md bg-zinc-900 px-3 text-xs font-medium text-white hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
         >
           Filter
         </button>
@@ -108,7 +108,7 @@ export default async function HistoryPage({
         {hasFilters && (
           <Link
             href="/history"
-            className="rounded-md px-3 py-1 text-xs font-medium text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-50"
+            className="flex h-8 items-center rounded-md px-3 text-xs font-medium text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-50"
           >
             Clear
           </Link>
