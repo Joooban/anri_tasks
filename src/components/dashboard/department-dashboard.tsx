@@ -1,4 +1,10 @@
-import { getCompletionRate, getOverdueAndBlockedTasks, getUpcomingDeadlines, getAnnouncements } from "@/lib/dashboard-queries";
+import {
+  getCompletionRate,
+  getOverdueAndBlockedTasks,
+  getUpcomingDeadlines,
+  getAnnouncements,
+  getRecentlyCompleted,
+} from "@/lib/dashboard-queries";
 import { createClient } from "@/lib/supabase/server";
 import { CompletionRateCard } from "@/components/dashboard/completion-rate-card";
 import { TaskMiniList } from "@/components/dashboard/task-mini-list";
@@ -20,12 +26,13 @@ export async function DepartmentDashboard({
     );
   }
 
-  const [week, month, overdueBlocked, upcoming, announcements] = await Promise.all([
+  const [week, month, overdueBlocked, upcoming, announcements, completed] = await Promise.all([
     getCompletionRate(7, departmentId),
     getCompletionRate(30, departmentId),
     getOverdueAndBlockedTasks(departmentId),
     getUpcomingDeadlines(14, departmentId),
     getAnnouncements(departmentId),
+    getRecentlyCompleted(8, departmentId),
   ]);
 
   const supabase = await createClient();
@@ -94,6 +101,16 @@ export async function DepartmentDashboard({
             id: t.id,
             title: t.title,
             meta: new Date(t.deadline).toLocaleDateString(undefined, { month: "short", day: "numeric" }),
+          }))}
+        />
+
+        <TaskMiniList
+          title="Recently done"
+          emptyLabel="No completed tasks yet."
+          items={completed.map((t) => ({
+            id: t.id,
+            title: t.title,
+            meta: new Date(t.updated_at).toLocaleDateString(undefined, { month: "short", day: "numeric" }),
           }))}
         />
 

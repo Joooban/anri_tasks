@@ -2,6 +2,7 @@
 
 import { useActionState, useState } from "react";
 import { postAnnouncement, type PostAnnouncementState } from "@/app/(app)/announcements/actions";
+import { LocalDateTimeField } from "@/components/ui/local-datetime-field";
 
 const initialState: PostAnnouncementState = { error: null };
 
@@ -38,17 +39,25 @@ export function PostAnnouncementForm({ canPostCompanyWide }: { canPostCompanyWid
         rows={3}
         className="rounded-md border border-zinc-300 bg-white px-2 py-1.5 text-sm dark:border-zinc-700 dark:bg-zinc-900"
       />
-      <div className="flex flex-wrap items-center gap-4 text-xs text-zinc-600 dark:text-zinc-400">
-        <label className="flex items-center gap-1.5">
-          <input type="checkbox" name="pinned" />
-          Pin to top
-        </label>
-        {canPostCompanyWide && (
+      <div className="flex flex-wrap items-end gap-4">
+        <div className="flex items-center gap-4 text-xs text-zinc-600 dark:text-zinc-400">
           <label className="flex items-center gap-1.5">
-            <input type="checkbox" name="company_wide" />
-            Company-wide
+            <input type="checkbox" name="pinned" />
+            Pin to top
           </label>
-        )}
+          {canPostCompanyWide && (
+            <label className="flex items-center gap-1.5">
+              <input type="checkbox" name="company_wide" />
+              Company-wide
+            </label>
+          )}
+        </div>
+        <LocalDateTimeField
+          id="publish_at"
+          name="publish_at"
+          label="Publish at (optional — leave blank to post now)"
+          className="rounded-md border border-zinc-300 bg-white px-2 py-1.5 text-xs dark:border-zinc-700 dark:bg-zinc-900"
+        />
       </div>
       {state.error && <p className="text-xs text-red-500">{state.error}</p>}
       <div className="flex gap-2">

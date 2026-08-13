@@ -21,7 +21,8 @@ export function DepartmentTiles({ items }: { items: DepartmentHealth[] }) {
               <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${HEALTH_COLORS[item.health]}`} />
             </div>
             <p className="text-xs text-zinc-500 dark:text-zinc-400">
-              {item.overdueCount} overdue · {item.blockedCount} blocked · {item.dueSoonCount} due soon
+              {item.overdueCount} overdue · {item.blockedCount} blocked · {item.dueSoonCount} due soon ·{" "}
+              {item.doneThisWeekCount} done this week
             </p>
           </Link>
         ))}

@@ -18,7 +18,13 @@ export function AnnouncementsFeed({ items }: { items: AnnouncementItem[] }) {
               <p className="mt-0.5 text-sm text-zinc-600 dark:text-zinc-400">{item.body}</p>
               <p className="mt-1 text-xs text-zinc-400">
                 {item.department?.name ?? "Company-wide"} · {item.author?.full_name ?? item.author?.email} ·{" "}
-                {new Date(item.created_at).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
+                {new Date(item.publish_at).toLocaleString(undefined, {
+                  month: "short",
+                  day: "numeric",
+                  year: "numeric",
+                  hour: "numeric",
+                  minute: "2-digit",
+                })}
               </p>
             </li>
           ))}

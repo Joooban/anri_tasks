@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { friendlyError } from "@/lib/friendly-error";
 
 export interface CreateMeetingState {
   error: string | null;
@@ -43,7 +44,7 @@ export async function createMeeting(
     created_by: profile.id,
   });
 
-  if (error) return { error: error.message };
+  if (error) return { error: friendlyError(error, "We couldn't save that meeting") };
   revalidatePath("/calendar");
   return { error: null };
 }

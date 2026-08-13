@@ -26,7 +26,8 @@ export default function LoginPage() {
     });
 
     if (error) {
-      setError(error.message);
+      console.error("[sign in]", error);
+      setError("We couldn't start sign-in. Please try again in a moment.");
       setLoading(false);
     }
   }

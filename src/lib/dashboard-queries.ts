@@ -23,6 +23,31 @@ export async function getCompletionRate(days: number, departmentId?: string): Pr
   return { completed, total, percent: total === 0 ? 0 : Math.round((completed / total) * 100) };
 }
 
+export interface CompletedTask {
+  id: string;
+  title: string;
+  updated_at: string;
+}
+
+// Most recently completed tasks, optionally scoped to one department — the
+// "tasks done" list called out separately from the completion-rate percent
+// in the project brief's department dashboard requirements.
+export async function getRecentlyCompleted(limit = 8, departmentId?: string): Promise<CompletedTask[]> {
+  const supabase = await createClient();
+
+  let query = supabase
+    .from("tasks")
+    .select("id,title,updated_at")
+    .eq("status", "done")
+    .order("updated_at", { ascending: false })
+    .limit(limit);
+
+  if (departmentId) query = query.eq("creator_department_id", departmentId);
+
+  const { data } = await query;
+  return data ?? [];
+}
+
 export interface OverdueBlockedTask {
   id: string;
   title: string;
@@ -80,23 +105,33 @@ export interface DepartmentHealth {
   overdueCount: number;
   blockedCount: number;
   dueSoonCount: number;
+  doneThisWeekCount: number;
 }
 
 export async function getDepartmentHealthGrid(departments: Department[]): Promise<DepartmentHealth[]> {
   const supabase = await createClient();
   const now = new Date();
   const soon = new Date(now.getTime() + 2 * 86_400_000).toISOString();
+  const weekAgo = new Date(now.getTime() - 7 * 86_400_000).toISOString();
   const nowIso = now.toISOString();
 
   const fullAccountDepts = departments.filter((d) => d.has_account);
 
   const results = await Promise.all(
     fullAccountDepts.map(async (dept) => {
-      const { data } = await supabase
-        .from("tasks")
-        .select("status,deadline")
-        .eq("creator_department_id", dept.id)
-        .not("status", "in", "(done,cancelled)");
+      const [{ data }, { count: doneThisWeekCount }] = await Promise.all([
+        supabase
+          .from("tasks")
+          .select("status,deadline")
+          .eq("creator_department_id", dept.id)
+          .not("status", "in", "(done,cancelled)"),
+        supabase
+          .from("tasks")
+          .select("id", { count: "exact", head: true })
+          .eq("creator_department_id", dept.id)
+          .eq("status", "done")
+          .gte("updated_at", weekAgo),
+      ]);
 
       const tasks = data ?? [];
       const overdueCount = tasks.filter((t) => t.deadline && t.deadline < nowIso).length;
@@ -105,7 +140,7 @@ export async function getDepartmentHealthGrid(departments: Department[]): Promis
 
       const health: HealthStatus = overdueCount > 0 || blockedCount > 0 ? "red" : dueSoonCount > 0 ? "yellow" : "green";
 
-      return { department: dept, health, overdueCount, blockedCount, dueSoonCount };
+      return { department: dept, health, overdueCount, blockedCount, dueSoonCount, doneThisWeekCount: doneThisWeekCount ?? 0 };
     })
   );
 
@@ -118,6 +153,7 @@ export interface AnnouncementItem {
   body: string;
   pinned: boolean;
   created_at: string;
+  publish_at: string;
   department: { name: string } | null;
   author: { full_name: string | null; email: string } | null;
 }
@@ -127,8 +163,9 @@ export async function getAnnouncements(departmentId?: string | null): Promise<An
   let query = supabase
     .from("announcements")
     .select("*, department:departments(name), author:profiles(full_name,email)")
+    .lte("publish_at", new Date().toISOString())
     .order("pinned", { ascending: false })
-    .order("created_at", { ascending: false })
+    .order("publish_at", { ascending: false })
     .limit(20);
 
   if (departmentId) {

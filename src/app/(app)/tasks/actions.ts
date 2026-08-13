@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
+import { friendlyError } from "@/lib/friendly-error";
 
 const chainStepSchema = z.object({
   assignee_type: z.enum(["department", "individual"]),
@@ -78,7 +79,7 @@ export async function createTask(
     .single();
 
   if (taskError || !task) {
-    return { error: taskError?.message ?? "Failed to create task." };
+    return { error: friendlyError(taskError, "We couldn't create the task") };
   }
 
   const assigneeRows = input.chain.map((step, index) => ({
@@ -93,7 +94,7 @@ export async function createTask(
   }));
 
   const { error: assigneeError } = await supabase.from("task_assignees").insert(assigneeRows);
-  if (assigneeError) return { error: assigneeError.message };
+  if (assigneeError) return { error: friendlyError(assigneeError, "We couldn't set up the assignee chain") };
 
   if (input.visibility.length > 0) {
     const { error: visibilityError } = await supabase.from("task_visibility").insert(
@@ -103,7 +104,7 @@ export async function createTask(
         profile_id: v.profile_id,
       }))
     );
-    if (visibilityError) return { error: visibilityError.message };
+    if (visibilityError) return { error: friendlyError(visibilityError, "We couldn't save the visibility settings") };
   }
 
   // First step starts 'active' via direct insert above rather than an

@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { friendlyError } from "@/lib/friendly-error";
 
 async function getActingProfile() {
   const supabase = await createClient();
@@ -28,7 +29,7 @@ export async function completeStep(taskId: string, assigneeId: string, requiresC
     })
     .eq("id", assigneeId);
 
-  if (error) return { error: error.message };
+  if (error) return { error: friendlyError(error, "We couldn't update that step") };
   revalidatePath(`/tasks/${taskId}`);
   return { error: null };
 }
@@ -44,7 +45,7 @@ export async function confirmStep(taskId: string, assigneeId: string) {
     .update({ status: "done", completed_at: new Date().toISOString(), completed_by: profileId })
     .eq("id", assigneeId);
 
-  if (error) return { error: error.message };
+  if (error) return { error: friendlyError(error, "We couldn't confirm that step") };
   revalidatePath(`/tasks/${taskId}`);
   return { error: null };
 }
@@ -58,7 +59,7 @@ export async function blockStep(taskId: string, assigneeId: string, notes: strin
     .update({ status: "blocked", notes })
     .eq("id", assigneeId);
 
-  if (error) return { error: error.message };
+  if (error) return { error: friendlyError(error, "We couldn't mark that step blocked") };
   revalidatePath(`/tasks/${taskId}`);
   return { error: null };
 }
@@ -68,7 +69,7 @@ export async function unblockStep(taskId: string, assigneeId: string) {
   if (!profileId) return { error: "Not signed in." };
 
   const { error } = await supabase.from("task_assignees").update({ status: "active" }).eq("id", assigneeId);
-  if (error) return { error: error.message };
+  if (error) return { error: friendlyError(error, "We couldn't resume that step") };
 
   await supabase.from("tasks").update({ status: "in_progress" }).eq("id", taskId);
   revalidatePath(`/tasks/${taskId}`);
@@ -80,7 +81,7 @@ export async function cancelTask(taskId: string) {
   if (!profileId) return { error: "Not signed in." };
 
   const { error } = await supabase.from("tasks").update({ status: "cancelled" }).eq("id", taskId);
-  if (error) return { error: error.message };
+  if (error) return { error: friendlyError(error, "We couldn't cancel the task") };
   revalidatePath(`/tasks/${taskId}`);
   return { error: null };
 }
@@ -94,7 +95,7 @@ export async function addComment(taskId: string, body: string) {
     .from("task_comments")
     .insert({ task_id: taskId, author_id: profileId, body: body.trim() });
 
-  if (error) return { error: error.message };
+  if (error) return { error: friendlyError(error, "We couldn't post your comment") };
   revalidatePath(`/tasks/${taskId}`);
   return { error: null };
 }
