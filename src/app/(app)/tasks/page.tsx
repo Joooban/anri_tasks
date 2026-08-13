@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { getTaskList } from "@/lib/queries";
+import { getCurrentProfile } from "@/lib/get-current-profile";
 import { TaskCard } from "@/components/tasks/task-card";
 import { EmptyState } from "@/components/ui/card";
 import { TASK_STATUS_LABELS, type TaskStatus } from "@/lib/types";
@@ -21,18 +22,24 @@ export default async function TasksPage({
   searchParams: Promise<{ status?: string }>;
 }) {
   const { status } = await searchParams;
-  const tasks = await getTaskList({ status: status && status !== "all" ? status : undefined });
+  const [tasks, current] = await Promise.all([
+    getTaskList({ status: status && status !== "all" ? status : undefined }),
+    getCurrentProfile(),
+  ]);
+  const canCreate = current?.profile.role !== "employee";
 
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
         <h1 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">Tasks</h1>
-        <Link
-          href="/tasks/new"
-          className="rounded-lg bg-zinc-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
-        >
-          + New Task
-        </Link>
+        {canCreate && (
+          <Link
+            href="/tasks/new"
+            className="rounded-lg bg-zinc-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
+          >
+            + New Task
+          </Link>
+        )}
       </div>
 
       <div className="flex flex-wrap gap-1.5">
@@ -55,9 +62,11 @@ export default async function TasksPage({
       {tasks.length === 0 ? (
         <EmptyState>
           <p>No tasks here yet.</p>
-          <Link href="/tasks/new" className="text-zinc-900 underline dark:text-zinc-50">
-            Create the first one
-          </Link>
+          {canCreate && (
+            <Link href="/tasks/new" className="text-zinc-900 underline dark:text-zinc-50">
+              Create the first one
+            </Link>
+          )}
         </EmptyState>
       ) : (
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">

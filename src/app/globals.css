@@ -1,8 +1,9 @@
 @import "tailwindcss";
 
-/* Tailwind v4 ties `dark:` to prefers-color-scheme by default. next-themes
-   toggles a `.dark` class on <html> instead (so it can override system
-   preference), so `dark:` utilities need to be re-pointed at that class. */
+/* Tailwind v4 ties `dark:` to prefers-color-scheme by default. Our theme
+   toggle (src/components/theme-toggle.tsx) sets a `.dark` class on <html>
+   instead, so it can override system preference — `dark:` utilities need
+   to be re-pointed at that class to respond to it. */
 @custom-variant dark (&:where(.dark, .dark *));
 
 :root {

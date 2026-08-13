@@ -1,17 +1,28 @@
 "use client";
 
 import { startTransition, useEffect, useState } from "react";
-import { useTheme } from "next-themes";
+
+type Theme = "light" | "dark";
+
+function readTheme(): Theme {
+  return document.documentElement.classList.contains("dark") ? "dark" : "light";
+}
 
 export function ThemeToggle() {
-  const { theme, setTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
+  const [theme, setTheme] = useState<Theme | null>(null);
 
   useEffect(() => {
-    startTransition(() => setMounted(true));
+    startTransition(() => setTheme(readTheme()));
   }, []);
 
-  if (!mounted) {
+  function toggle() {
+    const next: Theme = theme === "dark" ? "light" : "dark";
+    document.documentElement.classList.toggle("dark", next === "dark");
+    localStorage.setItem("theme", next);
+    setTheme(next);
+  }
+
+  if (theme === null) {
     return <div className="h-9 w-9" />;
   }
 
@@ -19,7 +30,7 @@ export function ThemeToggle() {
 
   return (
     <button
-      onClick={() => setTheme(isDark ? "light" : "dark")}
+      onClick={toggle}
       aria-label="Toggle theme"
       className="flex h-9 w-9 items-center justify-center rounded-lg text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-50"
     >
