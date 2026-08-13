@@ -153,7 +153,7 @@ function StepRow({
           {canCompleteThis && (
             <button
               disabled={pending}
-              onClick={() => run(() => completeStep(taskId, step.id, step.requires_confirmation))}
+              onClick={() => run(() => completeStep(taskId, step.id))}
               className="rounded-lg bg-emerald-600 px-3 py-1 text-xs font-medium text-white hover:bg-emerald-700 disabled:opacity-60"
             >
               {step.requires_confirmation ? "Submit for confirmation" : "Mark done"}
