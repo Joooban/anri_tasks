@@ -4,6 +4,7 @@ import { useActionState, useState } from "react";
 import { createTask, type CreateTaskState } from "@/app/(app)/tasks/actions";
 import { AssigneeChainEditor, newStep, type ChainStep } from "@/components/tasks/assignee-chain-editor";
 import { VisibilityPicker, type VisibilityEntry } from "@/components/tasks/visibility-picker";
+import { LocalDateTimeField } from "@/components/ui/local-datetime-field";
 import type { Department, Profile, TaskType } from "@/lib/types";
 
 const initialState: CreateTaskState = { error: null };
@@ -67,17 +68,7 @@ export function TaskForm({
           </select>
         </div>
 
-        <div className="flex flex-col gap-1.5">
-          <label htmlFor="deadline" className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
-            Deadline
-          </label>
-          <input
-            id="deadline"
-            name="deadline"
-            type="datetime-local"
-            className="rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
-          />
-        </div>
+        <LocalDateTimeField id="deadline" name="deadline" label="Deadline" />
       </div>
 
       <label className="flex items-center gap-2 text-sm text-zinc-700 dark:text-zinc-300">

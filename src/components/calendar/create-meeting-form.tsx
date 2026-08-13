@@ -2,6 +2,7 @@
 
 import { useActionState, useState } from "react";
 import { createMeeting, type CreateMeetingState } from "@/app/(app)/calendar/actions";
+import { LocalDateTimeField } from "@/components/ui/local-datetime-field";
 
 const initialState: CreateMeetingState = { error: null };
 
@@ -37,15 +38,15 @@ export function CreateMeetingForm({ canPostCompanyWide }: { canPostCompanyWide: 
           placeholder="Meeting link (optional)"
           className="rounded-md border border-zinc-300 bg-white px-2 py-1.5 text-sm dark:border-zinc-700 dark:bg-zinc-900"
         />
-        <input
+        <LocalDateTimeField
+          id="start_at"
           name="start_at"
-          type="datetime-local"
           required
           className="rounded-md border border-zinc-300 bg-white px-2 py-1.5 text-sm dark:border-zinc-700 dark:bg-zinc-900"
         />
-        <input
+        <LocalDateTimeField
+          id="end_at"
           name="end_at"
-          type="datetime-local"
           className="rounded-md border border-zinc-300 bg-white px-2 py-1.5 text-sm dark:border-zinc-700 dark:bg-zinc-900"
         />
       </div>
