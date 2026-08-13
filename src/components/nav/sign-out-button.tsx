@@ -1,21 +1,33 @@
 "use client";
 
-import { useTransition } from "react";
+import { useState, useTransition } from "react";
 import { signOut } from "@/app/actions/auth";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 export function SignOutButton({ className }: { className?: string }) {
+  const [open, setOpen] = useState(false);
   const [pending, startTransition] = useTransition();
 
-  function handleClick() {
-    if (!window.confirm("Sign out?")) return;
+  function handleConfirm() {
     startTransition(() => {
       signOut();
     });
   }
 
   return (
-    <button onClick={handleClick} disabled={pending} className={className}>
-      {pending ? "Signing out…" : "Sign out"}
-    </button>
+    <>
+      <button onClick={() => setOpen(true)} className={className}>
+        Sign out
+      </button>
+      <ConfirmDialog
+        open={open}
+        title="Sign out?"
+        description="You'll need to sign in again to continue."
+        confirmLabel="Sign out"
+        pending={pending}
+        onConfirm={handleConfirm}
+        onCancel={() => setOpen(false)}
+      />
+    </>
   );
 }
