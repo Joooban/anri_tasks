@@ -1,7 +1,7 @@
 // Minimal hand-rolled service worker (no Workbox/next-pwa) — offline
 // *viewing* of already-visited pages and static assets only, per the
 // project brief. Offline editing is a phase-2 feature.
-const CACHE_VERSION = "anri-cache-v1";
+const CACHE_VERSION = "anri-cache-v2";
 const OFFLINE_URL = "/offline.html";
 
 self.addEventListener("install", (event) => {
@@ -20,6 +20,23 @@ self.addEventListener("activate", (event) => {
   );
 });
 
+// Fire-and-forget cache write. Some responses (redirects, opaque
+// cross-origin, certain streamed RSC payloads) throw when handed to
+// cache.put — that must never become an unhandled rejection or block the
+// actual response from reaching the page.
+function cachePut(request, response) {
+  caches
+    .open(CACHE_VERSION)
+    .then((cache) => cache.put(request, response))
+    .catch(() => {});
+}
+
+// event.respondWith() throws "Failed to convert value to 'Response'" if the
+// promise it's given ever resolves to undefined — which caches.match()
+// does whenever there's no cached entry. Every fallback chain below is
+// wrapped so it always terminates in a real Response, never undefined.
+const FALLBACK_RESPONSE = () => new Response("Offline", { status: 503, statusText: "Offline" });
+
 self.addEventListener("fetch", (event) => {
   const { request } = event;
   if (request.method !== "GET") return;
@@ -28,16 +45,21 @@ self.addEventListener("fetch", (event) => {
   if (url.origin !== self.location.origin) return;
 
   // Page navigations: network-first, falling back to a cached copy of the
-  // same page, then to the generic offline page.
+  // same page, then to the generic offline page, then to a bare response
+  // so respondWith never receives undefined.
   if (request.mode === "navigate") {
     event.respondWith(
       fetch(request)
         .then((response) => {
-          const clone = response.clone();
-          caches.open(CACHE_VERSION).then((cache) => cache.put(request, clone));
+          cachePut(request, response.clone());
           return response;
         })
-        .catch(async () => (await caches.match(request)) || (await caches.match(OFFLINE_URL)))
+        .catch(async () => {
+          const cachedPage = await caches.match(request);
+          if (cachedPage) return cachedPage;
+          const offline = await caches.match(OFFLINE_URL);
+          return offline || FALLBACK_RESPONSE();
+        })
     );
     return;
   }
@@ -48,11 +70,12 @@ self.addEventListener("fetch", (event) => {
       caches.match(request).then(
         (cached) =>
           cached ||
-          fetch(request).then((response) => {
-            const clone = response.clone();
-            caches.open(CACHE_VERSION).then((cache) => cache.put(request, clone));
-            return response;
-          })
+          fetch(request)
+            .then((response) => {
+              cachePut(request, response.clone());
+              return response;
+            })
+            .catch(FALLBACK_RESPONSE)
       )
     );
     return;
@@ -63,10 +86,9 @@ self.addEventListener("fetch", (event) => {
   event.respondWith(
     fetch(request)
       .then((response) => {
-        const clone = response.clone();
-        caches.open(CACHE_VERSION).then((cache) => cache.put(request, clone));
+        cachePut(request, response.clone());
         return response;
       })
-      .catch(() => caches.match(request))
+      .catch(async () => (await caches.match(request)) || FALLBACK_RESPONSE())
   );
 });
