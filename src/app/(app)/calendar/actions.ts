@@ -33,23 +33,23 @@ export async function createMeeting(
   const isCompanyWide = formData.get("company_wide") === "on";
   const canPostCompanyWide = profile.role === "boss_boss" || profile.role === "supervisor";
 
-  // Enforced here, not via a role check in the calendar_events_insert RLS
-  // policy — see the note in tasks/actions.ts createTask for why.
+  // Fast-fail checks for a friendlier error before hitting the DB — the
+  // RPC (create_meeting_rpc, see 0014) re-validates all of this itself
+  // regardless, since a client-side check is UX only.
   if (profile.role === "employee") return { error: "Employees can't add meetings." };
   if (isCompanyWide && !canPostCompanyWide) return { error: "Only the President or Supervisors can post company-wide." };
   if (!title || !startAt) return { error: "Title and start time are required." };
 
-  const { error } = await supabase.from("calendar_events").insert({
-    title,
-    description,
-    department_id: isCompanyWide ? null : profile.department_id,
-    start_at: new Date(startAt).toISOString(),
-    end_at: endAt ? new Date(endAt).toISOString() : null,
-    meeting_link: meetingLink,
-    created_by: profile.id,
+  const { data: eventId, error } = await supabase.rpc("create_meeting_rpc", {
+    p_title: title,
+    p_description: description,
+    p_start_at: new Date(startAt).toISOString(),
+    p_end_at: endAt ? new Date(endAt).toISOString() : null,
+    p_meeting_link: meetingLink,
+    p_company_wide: isCompanyWide,
   });
 
-  if (error) return { error: friendlyError(error, "We couldn't save that meeting") };
+  if (error || !eventId) return { error: friendlyError(error, "We couldn't save that meeting") };
   revalidatePath("/calendar");
   return { error: null };
 }

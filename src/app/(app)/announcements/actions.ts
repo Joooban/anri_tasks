@@ -33,8 +33,9 @@ export async function postAnnouncement(
   const expiresAtRaw = (formData.get("expires_at") as string) || null;
   const canPostCompanyWide = profile.role === "boss_boss" || profile.role === "supervisor";
 
-  // Enforced here, not via a role check in the announcements_insert RLS
-  // policy — see the note in tasks/actions.ts createTask for why.
+  // Fast-fail checks for a friendlier error before hitting the DB — the
+  // RPC (create_announcement_rpc, see 0014) re-validates all of this
+  // itself regardless, since a client-side check is UX only.
   if (profile.role === "employee") return { error: "Employees can't post announcements." };
   if (companyWide && !canPostCompanyWide) return { error: "Only the President or Supervisors can post company-wide." };
   if (!title || !body) return { error: "Title and body are required." };
@@ -43,20 +44,16 @@ export async function postAnnouncement(
     return { error: "The expiry time has to be after the publish time." };
   }
 
-  const { error } = await supabase.from("announcements").insert({
-    department_id: companyWide && canPostCompanyWide ? null : profile.department_id,
-    author_id: profile.id,
-    title,
-    body,
-    pinned,
-    // Leave unset to post immediately (column defaults to now()); a future
-    // timestamp here holds the announcement back until that moment.
-    ...(publishAtRaw ? { publish_at: publishAtRaw } : {}),
-    // Leave unset for an announcement with no expiry.
-    expires_at: expiresAtRaw,
+  const { data: announcementId, error } = await supabase.rpc("create_announcement_rpc", {
+    p_title: title,
+    p_body: body,
+    p_pinned: pinned,
+    p_company_wide: companyWide,
+    p_publish_at: publishAtRaw,
+    p_expires_at: expiresAtRaw,
   });
 
-  if (error) return { error: friendlyError(error, "We couldn't post the announcement") };
+  if (error || !announcementId) return { error: friendlyError(error, "We couldn't post the announcement") };
   revalidatePath("/announcements");
   revalidatePath("/dashboard");
   return { error: null };
