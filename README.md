@@ -121,9 +121,4 @@ npm run dev
   (General/Maintenance/Compliance/Safety/Administrative/Operations)
   pending client confirmation.
 
-## Moving to production
 
-Once a contract/payment is finalized, transfer this Supabase project and
-the Vercel project to company-owned accounts (both support in-place
-transfer, no rebuild needed), then point DNS/domain at the new Vercel
-project.
