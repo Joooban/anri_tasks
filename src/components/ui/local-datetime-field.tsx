@@ -8,20 +8,33 @@ import { useState } from "react";
 // deploys to Vercel while users are in the Philippines). Converting to a full
 // ISO timestamp here, in the browser, captures the correct offset before the
 // value ever leaves the client.
+
+// Converts a stored UTC ISO string back to the "YYYY-MM-DDTHH:mm" shape a
+// datetime-local input expects, using the browser's local time — the
+// inverse of the onChange conversion below, so editing a value round-trips
+// without drifting.
+function toLocalInputValue(iso: string) {
+  const d = new Date(iso);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
 export function LocalDateTimeField({
   id,
   name,
   label,
   required,
   className,
+  defaultValueIso,
 }: {
   id: string;
   name: string;
   label?: string;
   required?: boolean;
   className?: string;
+  defaultValueIso?: string | null;
 }) {
-  const [iso, setIso] = useState("");
+  const [iso, setIso] = useState(defaultValueIso ?? "");
 
   const field = (
     <>
@@ -29,6 +42,7 @@ export function LocalDateTimeField({
         id={id}
         type="datetime-local"
         required={required}
+        defaultValue={defaultValueIso ? toLocalInputValue(defaultValueIso) : undefined}
         onChange={(e) => setIso(e.target.value ? new Date(e.target.value).toISOString() : "")}
         className={
           className ??

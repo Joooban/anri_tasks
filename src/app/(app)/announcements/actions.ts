@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { encrypt } from "@/lib/encryption";
 import { friendlyError } from "@/lib/friendly-error";
 
 export interface PostAnnouncementState {
@@ -45,8 +46,8 @@ export async function postAnnouncement(
   }
 
   const { data: announcementId, error } = await supabase.rpc("create_announcement_rpc", {
-    p_title: title,
-    p_body: body,
+    p_title: encrypt(title),
+    p_body: encrypt(body),
     p_pinned: pinned,
     p_company_wide: companyWide,
     p_publish_at: publishAtRaw,
@@ -54,6 +55,48 @@ export async function postAnnouncement(
   });
 
   if (error || !announcementId) return { error: friendlyError(error, "We couldn't post the announcement") };
+  revalidatePath("/announcements");
+  revalidatePath("/dashboard");
+  return { error: null };
+}
+
+export async function updateAnnouncement(
+  _prevState: PostAnnouncementState,
+  formData: FormData
+): Promise<PostAnnouncementState> {
+  const supabase = await createClient();
+  const id = String(formData.get("id") ?? "");
+  const title = String(formData.get("title") ?? "").trim();
+  const body = String(formData.get("body") ?? "").trim();
+  const pinned = formData.get("pinned") === "on";
+  const publishAtRaw = (formData.get("publish_at") as string) || null;
+  const expiresAtRaw = (formData.get("expires_at") as string) || null;
+
+  if (!id) return { error: "Missing announcement." };
+  if (!title || !body) return { error: "Title and body are required." };
+  if (publishAtRaw && expiresAtRaw && expiresAtRaw <= publishAtRaw) {
+    return { error: "The expiry time has to be after the publish time." };
+  }
+
+  const { error } = await supabase.rpc("update_announcement_rpc", {
+    p_id: id,
+    p_title: encrypt(title),
+    p_body: encrypt(body),
+    p_pinned: pinned,
+    p_publish_at: publishAtRaw,
+    p_expires_at: expiresAtRaw,
+  });
+
+  if (error) return { error: friendlyError(error, "We couldn't update the announcement") };
+  revalidatePath("/announcements");
+  revalidatePath("/dashboard");
+  return { error: null };
+}
+
+export async function deleteAnnouncement(id: string) {
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("delete_announcement_rpc", { p_id: id });
+  if (error) return { error: friendlyError(error, "We couldn't delete the announcement") };
   revalidatePath("/announcements");
   revalidatePath("/dashboard");
   return { error: null };

@@ -3,6 +3,8 @@ import Link from "next/link";
 const REASONS: Record<string, string> = {
   wrong_domain:
     "That Google account isn't part of the company Workspace domain. Please sign in with your company email.",
+  not_allowlisted:
+    "This email hasn't been approved for access yet. Ask the Resident Manager to add it, then try again.",
   exchange_failed: "We couldn't complete sign-in. Please try again.",
   missing_code: "Sign-in was interrupted. Please try again.",
 };

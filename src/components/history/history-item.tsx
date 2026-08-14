@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { TaskStatusBadge } from "@/components/tasks/task-status-badge";
+import { DeleteTaskButton } from "@/components/tasks/delete-task-button";
 import { PersonLabel } from "@/components/ui/person-label";
 import type { TaskStatus } from "@/lib/types";
 
@@ -19,14 +20,18 @@ export function HistoryItem({
   status,
   departmentName,
   updatedAt,
+  deadline,
   auditLog,
+  canDelete,
 }: {
   id: string;
   title: string;
   status: TaskStatus;
   departmentName: string | null;
   updatedAt: string;
+  deadline?: string | null;
   auditLog: HistoryAuditEntry[];
+  canDelete?: boolean;
 }) {
   const [open, setOpen] = useState(false);
 
@@ -40,6 +45,8 @@ export function HistoryItem({
           <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">
             {departmentName ?? "—"} · Updated{" "}
             {new Date(updatedAt).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}
+            {deadline &&
+              ` · Due ${new Date(deadline).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}`}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -50,6 +57,7 @@ export function HistoryItem({
           >
             {open ? "Hide trail" : "Show trail"}
           </button>
+          {canDelete && <DeleteTaskButton taskId={id} />}
         </div>
       </div>
 

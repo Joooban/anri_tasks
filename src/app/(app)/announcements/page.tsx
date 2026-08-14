@@ -20,7 +20,7 @@ export default async function AnnouncementsPage() {
         <h1 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">Announcements</h1>
         {canPost && <PostAnnouncementForm canPostCompanyWide={canPostCompanyWide} />}
       </div>
-      <AnnouncementsFeed items={items} />
+      <AnnouncementsFeed items={items} currentUserId={current?.profile.id} canModerate={canPostCompanyWide} />
     </div>
   );
 }

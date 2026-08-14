@@ -72,7 +72,7 @@ export default async function DashboardPage() {
       overdue_blocked: (
         <TaskMiniList
           title="Overdue & blocked"
-          emptyLabel="Nothing overdue or blocked. 🎉"
+          emptyLabel="Nothing overdue or blocked."
           items={overdueBlocked.map((t) => ({
             id: t.id,
             title: t.title,
@@ -91,7 +91,7 @@ export default async function DashboardPage() {
           }))}
         />
       ),
-      announcements: <AnnouncementsFeed items={announcements} />,
+      announcements: <AnnouncementsFeed items={announcements} currentUserId={profile.id} canModerate />,
       department_tiles: <DepartmentTiles items={health} />,
     };
 
@@ -107,7 +107,23 @@ export default async function DashboardPage() {
         </div>
         <div className="grid gap-4 lg:grid-cols-2">
           {widgetOrder.filter((w) => enabledWidgets.includes(w)).map((w) => (
-            <div key={w} className={w === "department_tiles" || w === "overdue_blocked" ? "lg:col-span-2" : ""}>
+            // department_health and department_tiles both need room to list
+            // every department (this company has 14, with genuinely long
+            // names) — forcing either into a 50/50 split next to a small
+            // stat card never looks balanced, so both always take the full
+            // row. completion_rate spans too so it isn't left half-width
+            // with empty space next to it now that it has no neighbor.
+            <div
+              key={w}
+              className={
+                w === "department_tiles" ||
+                w === "overdue_blocked" ||
+                w === "department_health" ||
+                w === "completion_rate"
+                  ? "lg:col-span-2"
+                  : ""
+              }
+            >
               {widgetMap[w]}
             </div>
           ))}

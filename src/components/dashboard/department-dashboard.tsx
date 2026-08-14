@@ -5,6 +5,7 @@ import {
   getAnnouncements,
   getRecentlyCompleted,
 } from "@/lib/dashboard-queries";
+import { getCurrentProfile } from "@/lib/get-current-profile";
 import { createClient } from "@/lib/supabase/server";
 import { CompletionRateCard } from "@/components/dashboard/completion-rate-card";
 import { TaskMiniList } from "@/components/dashboard/task-mini-list";
@@ -26,14 +27,16 @@ export async function DepartmentDashboard({
     );
   }
 
-  const [week, month, overdueBlocked, upcoming, announcements, completed] = await Promise.all([
+  const [week, month, overdueBlocked, upcoming, announcements, completed, current] = await Promise.all([
     getCompletionRate(7, departmentId),
     getCompletionRate(30, departmentId),
     getOverdueAndBlockedTasks(departmentId),
     getUpcomingDeadlines(14, departmentId),
     getAnnouncements(departmentId),
     getRecentlyCompleted(8, departmentId),
+    getCurrentProfile(),
   ]);
+  const canModerate = current?.profile.role === "boss_boss" || current?.profile.role === "supervisor";
 
   const supabase = await createClient();
   const nowDate = new Date();
@@ -86,7 +89,7 @@ export async function DepartmentDashboard({
 
         <TaskMiniList
           title="Overdue & blocked"
-          emptyLabel="Nothing overdue or blocked. 🎉"
+          emptyLabel="Nothing overdue or blocked."
           items={overdueBlocked.map((t) => ({
             id: t.id,
             title: t.title,
@@ -115,7 +118,7 @@ export async function DepartmentDashboard({
         />
 
         <div className="lg:col-span-2">
-          <AnnouncementsFeed items={announcements} />
+          <AnnouncementsFeed items={announcements} currentUserId={current?.profile.id} canModerate={canModerate} />
         </div>
       </div>
     </div>

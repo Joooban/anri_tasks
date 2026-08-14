@@ -1,5 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { getFullAccountDepartments } from "@/lib/queries";
+import { getCurrentProfile } from "@/lib/get-current-profile";
+import { decrypt } from "@/lib/encryption";
 import { HistoryItem } from "@/components/history/history-item";
 import { EmptyState } from "@/components/ui/card";
 import Link from "next/link";
@@ -7,15 +9,25 @@ import Link from "next/link";
 export default async function HistoryPage({
   searchParams,
 }: {
-  searchParams: Promise<{ department?: string; from?: string; to?: string }>;
+  searchParams: Promise<{ department?: string; from?: string; to?: string; dateMode?: string }>;
 }) {
-  const { department, from, to } = await searchParams;
+  const { department, from, to, dateMode: dateModeParam } = await searchParams;
+  // "completed" (default) filters by when the task was finished/cancelled
+  // (updated_at) — the natural reading of a History log. "deadline" filters
+  // by the task's original due date instead, for "what was due in this
+  // range" lookups, which is a different question from "what happened in
+  // this range" and was a real source of user confusion before this toggle
+  // existed.
+  const dateMode = dateModeParam === "deadline" ? "deadline" : "completed";
+  const dateColumn = dateMode === "deadline" ? "deadline" : "updated_at";
   const supabase = await createClient();
-  const departments = await getFullAccountDepartments();
+  const [departments, current] = await Promise.all([getFullAccountDepartments(), getCurrentProfile()]);
+  const canDeleteAny = current?.profile.role === "boss_boss" || current?.profile.role === "supervisor";
+  const myId = current?.profile.id ?? null;
 
   let query = supabase
     .from("tasks")
-    .select("id,title,status,updated_at,creator_department_id,creator_department:departments(name)")
+    .select("id,title,status,updated_at,deadline,created_by,creator_department_id,creator_department:departments(name)")
     .in("status", ["done", "cancelled"])
     .order("updated_at", { ascending: false })
     .limit(100);
@@ -25,11 +37,12 @@ export default async function HistoryPage({
   // few hours of timezone fuzziness at the boundary is an acceptable
   // trade-off for a history filter (unlike task deadlines, nothing here
   // depends on exact precision).
-  if (from) query = query.gte("updated_at", new Date(`${from}T00:00:00`).toISOString());
-  if (to) query = query.lte("updated_at", new Date(`${to}T23:59:59.999`).toISOString());
+  if (from) query = query.gte(dateColumn, new Date(`${from}T00:00:00`).toISOString());
+  if (to) query = query.lte(dateColumn, new Date(`${to}T23:59:59.999`).toISOString());
 
-  const { data: tasks } = await query;
-  const taskIds = (tasks ?? []).map((t) => t.id);
+  const { data: rawTasks } = await query;
+  const tasks = (rawTasks ?? []).map((t) => ({ ...t, title: decrypt(t.title) }));
+  const taskIds = tasks.map((t) => t.id);
 
   const { data: auditRows } = taskIds.length
     ? await supabase
@@ -46,14 +59,14 @@ export default async function HistoryPage({
     auditByTask.set(row.task_id, list);
   }
 
-  const hasFilters = Boolean(department || from || to);
+  const hasFilters = Boolean(department || from || to || dateModeParam);
 
   return (
     <div className="flex flex-col gap-4">
       <h1 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">History</h1>
 
       <form className="flex flex-wrap items-end gap-3 rounded-xl border border-zinc-200 bg-white p-3 dark:border-zinc-800 dark:bg-zinc-900">
-        <div className="flex flex-col gap-1">
+        <div className="flex w-full flex-col gap-1 sm:w-auto">
           <label htmlFor="department" className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
             Department
           </label>
@@ -61,7 +74,7 @@ export default async function HistoryPage({
             id="department"
             name="department"
             defaultValue={department ?? ""}
-            className="h-8 min-w-[10rem] rounded-md border border-zinc-300 bg-white px-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+            className="h-8 w-full rounded-md border border-zinc-300 bg-white px-2 text-sm dark:border-zinc-700 dark:bg-zinc-900 sm:w-auto sm:min-w-[10rem]"
           >
             <option value="">All departments</option>
             {departments.map((d) => (
@@ -72,7 +85,22 @@ export default async function HistoryPage({
           </select>
         </div>
 
-        <div className="flex flex-col gap-1">
+        <div className="flex w-full flex-col gap-1 sm:w-auto">
+          <label htmlFor="dateMode" className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
+            Filter by
+          </label>
+          <select
+            id="dateMode"
+            name="dateMode"
+            defaultValue={dateMode}
+            className="h-8 w-full rounded-md border border-zinc-300 bg-white px-2 text-sm dark:border-zinc-700 dark:bg-zinc-900 sm:w-auto sm:min-w-[9rem]"
+          >
+            <option value="completed">Completion date</option>
+            <option value="deadline">Deadline</option>
+          </select>
+        </div>
+
+        <div className="flex w-full flex-col gap-1 sm:w-auto">
           <label htmlFor="from" className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
             From
           </label>
@@ -81,11 +109,11 @@ export default async function HistoryPage({
             type="date"
             name="from"
             defaultValue={from ?? ""}
-            className="h-8 rounded-md border border-zinc-300 bg-white px-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+            className="h-8 w-full rounded-md border border-zinc-300 bg-white px-2 text-sm dark:border-zinc-700 dark:bg-zinc-900 sm:w-auto"
           />
         </div>
 
-        <div className="flex flex-col gap-1">
+        <div className="flex w-full flex-col gap-1 sm:w-auto">
           <label htmlFor="to" className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
             To
           </label>
@@ -94,7 +122,7 @@ export default async function HistoryPage({
             type="date"
             name="to"
             defaultValue={to ?? ""}
-            className="h-8 rounded-md border border-zinc-300 bg-white px-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+            className="h-8 w-full rounded-md border border-zinc-300 bg-white px-2 text-sm dark:border-zinc-700 dark:bg-zinc-900 sm:w-auto"
           />
         </div>
 
@@ -129,7 +157,9 @@ export default async function HistoryPage({
               status={t.status}
               departmentName={(t.creator_department as unknown as { name: string } | null)?.name ?? null}
               updatedAt={t.updated_at}
+              deadline={t.deadline}
               auditLog={(auditByTask.get(t.id) ?? []) as never}
+              canDelete={t.status === "cancelled" && (canDeleteAny || t.created_by === myId)}
             />
           ))}
         </div>

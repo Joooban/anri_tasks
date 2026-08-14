@@ -2,31 +2,30 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getTaskDetail } from "@/lib/queries";
 import { getCurrentProfile } from "@/lib/get-current-profile";
-import { createClient } from "@/lib/supabase/server";
 import { TaskStatusBadge } from "@/components/tasks/task-status-badge";
 import { RelayChain } from "@/components/tasks/relay-chain";
 import { CopyForViberButton } from "@/components/tasks/copy-for-viber-button";
 import { CommentsSection } from "@/components/tasks/comments-section";
+import { DeleteTaskButton } from "@/components/tasks/delete-task-button";
 import { Card, CardTitle } from "@/components/ui/card";
 import { PersonLabel } from "@/components/ui/person-label";
 import { cancelTask } from "@/app/(app)/tasks/[id]/actions";
 
-export default async function TaskDetailPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function TaskDetailPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ attachmentError?: string }>;
+}) {
   const { id } = await params;
+  const { attachmentError } = await searchParams;
   const [detail, current] = await Promise.all([getTaskDetail(id), getCurrentProfile()]);
 
   if (!detail || !current) notFound();
 
   const { task, assignees, visibility, attachments, comments, auditLog } = detail;
   const { profile } = current;
-
-  const supabase = await createClient();
-  const attachmentsWithUrls = await Promise.all(
-    attachments.map(async (a) => {
-      const { data } = await supabase.storage.from("task-attachments").createSignedUrl(a.storage_path, 300);
-      return { ...a, url: data?.signedUrl ?? null };
-    })
-  );
 
   const activeStep = assignees.find((a) => a.status === "active" || a.status === "pending_approval");
   const activeAssigneeLabel = activeStep
@@ -42,6 +41,11 @@ export default async function TaskDetailPage({ params }: { params: Promise<{ id:
 
   return (
     <div className="flex flex-col gap-6 pb-10">
+      {attachmentError && (
+        <div className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-300">
+          The task was created, but this attachment failed to upload: {attachmentError}. Try adding it again.
+        </div>
+      )}
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <div className="mb-1 flex items-center gap-2">
@@ -80,6 +84,9 @@ export default async function TaskDetailPage({ params }: { params: Promise<{ id:
               </button>
             </form>
           )}
+          {canManage && task.status === "cancelled" && (
+            <DeleteTaskButton taskId={task.id} redirectTo="/tasks" />
+          )}
         </div>
       </div>
 
@@ -116,24 +123,18 @@ export default async function TaskDetailPage({ params }: { params: Promise<{ id:
         </Card>
       )}
 
-      {attachmentsWithUrls.length > 0 && (
+      {attachments.length > 0 && (
         <Card>
           <CardTitle className="mb-2">Attachments</CardTitle>
           <ul className="flex flex-col gap-1.5">
-            {attachmentsWithUrls.map((a) => (
+            {attachments.map((a) => (
               <li key={a.id}>
-                {a.url ? (
-                  <a
-                    href={a.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-sm text-blue-600 hover:underline dark:text-blue-400"
-                  >
-                    {a.file_name}
-                  </a>
-                ) : (
-                  <span className="text-sm text-zinc-400">{a.file_name} (unavailable)</span>
-                )}
+                <a
+                  href={`/tasks/${task.id}/attachments/${a.id}`}
+                  className="text-sm text-blue-600 hover:underline dark:text-blue-400"
+                >
+                  {a.file_name}
+                </a>
               </li>
             ))}
           </ul>

@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { decrypt, decryptNullable } from "@/lib/encryption";
 import type { Department, Profile, TaskType } from "@/lib/types";
 import type { TaskListItem } from "@/components/tasks/task-card";
 
@@ -51,6 +52,8 @@ export async function getTaskList(options?: {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const rest: Record<string, unknown> = { ...(row as any) };
     delete rest.task_assignees;
+    rest.title = decrypt(rest.title as string);
+    rest.description = decryptNullable(rest.description as string | null);
     return { ...rest, active_assignee_label } as unknown as TaskListItem;
   });
 }
@@ -143,11 +146,11 @@ export async function getTaskDetail(id: string) {
   if (!task) return null;
 
   return {
-    task,
+    task: { ...task, title: decrypt(task.title), description: decryptNullable(task.description) },
     assignees: (assignees ?? []) as unknown as TaskDetailAssignee[],
     visibility: visibility ?? [],
     attachments: attachments ?? [],
-    comments: comments ?? [],
+    comments: (comments ?? []).map((c) => ({ ...c, body: decrypt(c.body) })),
     auditLog: auditLog ?? [],
   };
 }

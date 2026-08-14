@@ -6,14 +6,25 @@ export function TopBar({
   fullName,
   email,
   role,
+  onMenuClick,
 }: {
   fullName: string | null;
   email: string;
   role: Role;
+  onMenuClick?: () => void;
 }) {
   return (
     <header className="flex h-14 shrink-0 items-center justify-between border-b border-zinc-200 bg-white px-4 dark:border-zinc-800 dark:bg-zinc-950">
-      <div />
+      <button
+        type="button"
+        onClick={onMenuClick}
+        aria-label="Open menu"
+        className="rounded-lg p-2 text-zinc-600 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-800 lg:hidden"
+      >
+        <svg viewBox="0 0 20 20" fill="none" className="h-5 w-5" aria-hidden="true">
+          <path d="M3 5h14M3 10h14M3 15h14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+        </svg>
+      </button>
       <div className="flex items-center gap-3">
         <ThemeToggle />
         <div className="flex items-center gap-2 border-l border-zinc-200 pl-3 dark:border-zinc-800">

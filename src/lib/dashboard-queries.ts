@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { decrypt } from "@/lib/encryption";
 import type { HealthStatus } from "@/lib/constants";
 import type { Department } from "@/lib/types";
 
@@ -65,7 +66,7 @@ export async function getRecentlyCompleted(limit = 8, departmentId?: string): Pr
   }
 
   const { data } = await query;
-  return data ?? [];
+  return (data ?? []).map((t) => ({ ...t, title: decrypt(t.title) }));
 }
 
 export interface OverdueBlockedTask {
@@ -94,7 +95,7 @@ export async function getOverdueAndBlockedTasks(departmentId?: string): Promise<
   }
 
   const { data } = await query;
-  return (data ?? []) as unknown as OverdueBlockedTask[];
+  return ((data ?? []) as unknown as OverdueBlockedTask[]).map((t) => ({ ...t, title: decrypt(t.title) }));
 }
 
 export interface UpcomingDeadlineTask {
@@ -124,7 +125,7 @@ export async function getUpcomingDeadlines(days = 14, departmentId?: string): Pr
   }
 
   const { data } = await query;
-  return (data ?? []) as unknown as UpcomingDeadlineTask[];
+  return ((data ?? []) as unknown as UpcomingDeadlineTask[]).map((t) => ({ ...t, title: decrypt(t.title) }));
 }
 
 export interface DepartmentHealth {
@@ -184,6 +185,7 @@ export interface AnnouncementItem {
   created_at: string;
   publish_at: string;
   expires_at: string | null;
+  author_id: string;
   department: { name: string } | null;
   author: { full_name: string | null; email: string } | null;
 }
@@ -205,5 +207,9 @@ export async function getAnnouncements(departmentId?: string | null): Promise<An
   }
 
   const { data } = await query;
-  return (data ?? []) as unknown as AnnouncementItem[];
+  return ((data ?? []) as unknown as AnnouncementItem[]).map((a) => ({
+    ...a,
+    title: decrypt(a.title),
+    body: decrypt(a.body),
+  }));
 }

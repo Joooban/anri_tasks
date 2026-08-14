@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile } from "@/lib/get-current-profile";
 import { getPreview } from "@/lib/get-preview";
+import { decrypt } from "@/lib/encryption";
 import { departmentColor, taskCalendarColor } from "@/lib/constants";
 import { CalendarView, type CalendarEventInput } from "@/components/calendar/calendar-view";
 import { CreateMeetingForm } from "@/components/calendar/create-meeting-form";
@@ -24,9 +25,15 @@ export default async function CalendarPage() {
   const events: CalendarEventInput[] = [
     ...(tasks ?? []).map((t) => ({
       id: `task-${t.id}`,
-      title: t.title,
+      title: decrypt(t.title),
       start: t.deadline as string,
-      allDay: false,
+      // FullCalendar applies a default 1-hour duration to timed
+      // (allDay: false) events with no explicit `end`. A deadline late in
+      // the day (e.g. 11:30 PM) then ends past midnight, which FullCalendar
+      // renders as spanning into the next day's cell. allDay events default
+      // to exactly a 1-day duration instead, so they can never bleed into
+      // the next cell — and the calendar never displays a time anyway.
+      allDay: true,
       color: taskCalendarColor(t.status as TaskStatus, t.deadline, t.creator_department_id),
       extendedProps: {
         type: "task" as const,

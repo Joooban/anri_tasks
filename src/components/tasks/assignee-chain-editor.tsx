@@ -86,6 +86,7 @@ export function AssigneeChainEditor({
 
           {step.assignee_type === "department" ? (
             <select
+              required
               value={step.department_id ?? ""}
               onChange={(e) => update(index, { department_id: e.target.value || null })}
               className="min-w-[10rem] flex-1 rounded-md border border-zinc-300 bg-white px-2 py-1 text-sm dark:border-zinc-700 dark:bg-zinc-900"
@@ -99,6 +100,7 @@ export function AssigneeChainEditor({
             </select>
           ) : (
             <select
+              required
               value={step.profile_id ?? ""}
               onChange={(e) => update(index, { profile_id: e.target.value || null })}
               className="min-w-[10rem] flex-1 rounded-md border border-zinc-300 bg-white px-2 py-1 text-sm dark:border-zinc-700 dark:bg-zinc-900"
@@ -148,7 +150,7 @@ export function AssigneeChainEditor({
               className="rounded p-1 text-red-500 hover:bg-red-50 dark:hover:bg-red-950"
               aria-label="Remove step"
             >
-              ✕
+              ×
             </button>
           </div>
         </div>

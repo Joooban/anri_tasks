@@ -1,7 +1,9 @@
 import { redirect } from "next/navigation";
 import { getCurrentProfile } from "@/lib/get-current-profile";
 import { getDepartments, getProfiles } from "@/lib/queries";
+import { createClient } from "@/lib/supabase/server";
 import { AccountsTable } from "@/components/accounts/accounts-table";
+import { AllowedEmails, type AllowedEmailItem } from "@/components/accounts/allowed-emails";
 
 export default async function AccountsPage() {
   const current = await getCurrentProfile();
@@ -10,7 +12,12 @@ export default async function AccountsPage() {
     redirect("/dashboard");
   }
 
-  const [profiles, departments] = await Promise.all([getProfiles(), getDepartments()]);
+  const supabase = await createClient();
+  const [profiles, departments, { data: allowedEmails }] = await Promise.all([
+    getProfiles(),
+    getDepartments(),
+    supabase.rpc("list_allowed_emails_rpc"),
+  ]);
 
   return (
     <div className="flex flex-col gap-4">
@@ -21,6 +28,7 @@ export default async function AccountsPage() {
           unassigned Employee until you set them up here.
         </p>
       </div>
+      <AllowedEmails items={(allowedEmails ?? []) as AllowedEmailItem[]} />
       <AccountsTable profiles={profiles} departments={departments} myProfileId={current.profile.id} />
     </div>
   );

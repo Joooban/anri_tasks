@@ -3,15 +3,50 @@
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
+import { createServiceRoleClient } from "@/lib/supabase/service-role";
+import { encrypt, encryptNullable, encryptBuffer } from "@/lib/encryption";
 import { friendlyError } from "@/lib/friendly-error";
 import { revalidateTaskRelatedPaths } from "@/lib/revalidate-task-paths";
 
-const chainStepSchema = z.object({
-  assignee_type: z.enum(["department", "individual"]),
-  department_id: z.string().uuid().nullable(),
-  profile_id: z.string().uuid().nullable(),
-  requires_confirmation: z.boolean(),
-});
+// Attachments are encrypted before upload (see the upload loop below), so
+// Storage itself can no longer see the real file type/size to enforce
+// anything — the bucket accepts only application/octet-stream now
+// (0021_fix_attachment_bucket_mime_type.sql). This is where that
+// validation actually happens instead. Keep this list in sync with the
+// original allowlist from 0020_attachment_bucket_limits.sql.
+const ALLOWED_ATTACHMENT_MIME_TYPES = new Set([
+  "application/pdf",
+  "application/msword",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "application/vnd.ms-excel",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  "application/vnd.ms-powerpoint",
+  "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+  "text/plain",
+  "text/csv",
+  "image/png",
+  "image/jpeg",
+  "image/webp",
+  "image/gif",
+]);
+const MAX_ATTACHMENT_BYTES = 25 * 1024 * 1024; // 25 MiB, matches the old bucket-level limit
+
+const chainStepSchema = z
+  .object({
+    assignee_type: z.enum(["department", "individual"]),
+    department_id: z.string().uuid().nullable(),
+    profile_id: z.string().uuid().nullable(),
+    requires_confirmation: z.boolean(),
+  })
+  // The DB's task_assignees_target_check constraint already enforces this,
+  // but catching it here first turns a raw constraint-violation 500 (with
+  // an unhelpful "we couldn't create the task") into an error that
+  // actually says what to fix — this happens when a step's type is left
+  // as "Department"/"Individual" but no actual department/person was
+  // picked from the still-blank "Select…" option.
+  .refine((step) => (step.assignee_type === "department" ? step.department_id !== null : step.profile_id !== null), {
+    message: "Every chain step needs a department or person selected.",
+  });
 
 const visibilitySchema = z.object({
   department_id: z.string().uuid().nullable(),
@@ -70,8 +105,8 @@ export async function createTask(
   // inside this one SECURITY DEFINER function rather than as separate
   // client-side inserts — see 0013_create_task_rpc.sql for why.
   const { data: taskId, error: rpcError } = await supabase.rpc("create_task_rpc", {
-    p_title: input.title,
-    p_description: input.description || null,
+    p_title: encrypt(input.title),
+    p_description: encryptNullable(input.description),
     p_task_type_id: input.task_type_id,
     p_deadline: input.deadline ? new Date(input.deadline).toISOString() : null,
     p_is_personal: input.is_personal,
@@ -84,13 +119,39 @@ export async function createTask(
   }
 
   const files = formData.getAll("attachments").filter((f): f is File => f instanceof File && f.size > 0);
-  for (const file of files) {
-    const path = `${taskId}/${Date.now()}-${file.name}`;
-    const { error: uploadError } = await supabase.storage
-      .from("task-attachments")
-      .upload(path, file);
-    if (!uploadError) {
-      await supabase.from("task_attachments").insert({
+  const failedFiles: string[] = [];
+
+  if (files.length > 0) {
+    // Uses the service role client rather than the user's own session: the
+    // storage.objects and task_attachments RLS policies gate writes with
+    // WITH CHECK (... and can_view_task(...)) — the same shape of policy
+    // that silently rejected valid writes elsewhere in this project (see
+    // PROJECT_CONTEXT.md). The user was already authorized above (passed
+    // the employee check and successfully created this exact task via
+    // create_task_rpc), so no further per-file check is needed here.
+    const serviceRole = createServiceRoleClient();
+    for (const file of files) {
+      if (file.size > MAX_ATTACHMENT_BYTES || !ALLOWED_ATTACHMENT_MIME_TYPES.has(file.type)) {
+        failedFiles.push(file.name);
+        continue;
+      }
+      const path = `${taskId}/${Date.now()}-${file.name}`;
+      // File content is encrypted before it ever reaches Storage — what's
+      // stored there is ciphertext, not the real file, so it's served with
+      // a generic content type rather than the original one. Only the
+      // decrypt route (src/app/(app)/tasks/[id]/attachments/[attachmentId]/
+      // route.ts) can turn it back into the real file; the original name/
+      // size/type are kept as plain metadata to render/serve it correctly.
+      const plainBytes = Buffer.from(await file.arrayBuffer());
+      const encryptedBytes = encryptBuffer(plainBytes);
+      const { error: uploadError } = await serviceRole.storage
+        .from("task-attachments")
+        .upload(path, encryptedBytes, { contentType: "application/octet-stream" });
+      if (uploadError) {
+        failedFiles.push(file.name);
+        continue;
+      }
+      const { error: insertError } = await serviceRole.from("task_attachments").insert({
         task_id: taskId,
         storage_path: path,
         file_name: file.name,
@@ -98,9 +159,18 @@ export async function createTask(
         mime_type: file.type || null,
         uploaded_by: profile.id,
       });
+      if (insertError) failedFiles.push(file.name);
     }
   }
 
   revalidateTaskRelatedPaths();
-  redirect(`/tasks/${taskId}`);
+  // The task itself was already created successfully by this point, so a
+  // failed attachment shouldn't block redirect or discard the form (which
+  // would also risk a duplicate task on resubmit) — surface it as a banner
+  // on the task page instead of a hard error here.
+  redirect(
+    failedFiles.length > 0
+      ? `/tasks/${taskId}?attachmentError=${encodeURIComponent(failedFiles.join(", "))}`
+      : `/tasks/${taskId}`
+  );
 }

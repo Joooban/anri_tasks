@@ -90,7 +90,7 @@ export function VisibilityPicker({
                 className="text-zinc-400 hover:text-red-500"
                 aria-label={`Remove ${v.label}`}
               >
-                ✕
+                ×
               </button>
             </span>
           ))}

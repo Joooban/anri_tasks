@@ -21,7 +21,7 @@ export function CopyForViberButton({
   function buildText() {
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? window.location.origin;
     const lines = [
-      `📋 ${title}`,
+      title,
       `Status: ${TASK_STATUS_LABELS[status]}`,
       activeAssigneeLabel ? `Waiting on: ${activeAssigneeLabel}` : null,
       deadline

@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { encrypt } from "@/lib/encryption";
 import { friendlyError } from "@/lib/friendly-error";
 import { revalidateTaskRelatedPaths } from "@/lib/revalidate-task-paths";
 
@@ -63,23 +64,24 @@ export async function cancelTask(taskId: string) {
   return { error: null };
 }
 
+// Permanent, irreversible removal — only ever offered in the UI once a task
+// is already cancelled. See 0018_announcement_and_task_delete_rpcs.sql.
+export async function deleteTask(taskId: string) {
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("delete_cancelled_task_rpc", { p_task_id: taskId });
+  if (error) return { error: friendlyError(error, "We couldn't delete the task") };
+  revalidateTaskRelatedPaths(taskId);
+  return { error: null };
+}
+
 export async function addComment(taskId: string, body: string) {
   if (!body.trim()) return { error: "Comment can't be empty." };
   const supabase = await createClient();
   const { data: commentId, error } = await supabase.rpc("add_task_comment_rpc", {
     p_task_id: taskId,
-    p_body: body.trim(),
+    p_body: encrypt(body.trim()),
   });
   if (error || !commentId) return { error: friendlyError(error, "We couldn't post your comment") };
   revalidateTaskRelatedPaths(taskId);
   return { error: null };
-}
-
-export async function getAttachmentUrl(storagePath: string) {
-  const supabase = await createClient();
-  const { data, error } = await supabase.storage
-    .from("task-attachments")
-    .createSignedUrl(storagePath, 60 * 5);
-  if (error || !data) return null;
-  return data.signedUrl;
 }

@@ -9,6 +9,10 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  /* Every Tailwind text-* utility (text-xs through text-9xl) is defined in
+     rem, so bumping the root font-size scales all type across the app
+     proportionally from one place instead of touching every component. */
+  font-size: 18px;
 }
 
 @theme inline {
@@ -54,23 +58,69 @@ button:disabled {
 }
 
 /* FullCalendar's dayGrid view sometimes assigns an event the "block"
-   (full-width, background-filled) class instead of "list-item" (compact
-   dot) even with eventDisplay: "list-item" explicitly set — a known
-   library inconsistency (fullcalendar/fullcalendar#5634) tied to the
-   event's date, not anything in our data. Since CalendarView already
-   renders fully custom content (icon, title, and its own color dot) via
-   eventContent, FullCalendar's own chrome is neutralized here so both
-   variants render identically instead of one being a wide bar. */
+   (fc-h-event, full-width, background-filled) class instead of
+   "list-item" (compact dot) even with eventDisplay: "list-item"
+   explicitly set — a known library inconsistency
+   (fullcalendar/fullcalendar#5634) tied to the event's date, not
+   anything in our data. fc-h-event sets `display: block`, and for a
+   block element `width: auto` fills the container instead of
+   shrink-wrapping — so an earlier attempt to neutralize this by only
+   setting `width: auto` left block events visually full-width even
+   after their background/border were stripped. Forcing inline-flex
+   here makes it actually shrink to content, so both variants render
+   identically instead of one being a wide bar. */
 .fc-daygrid-event {
-  width: auto !important;
+  display: inline-flex !important;
+  width: fit-content !important;
   max-width: 100%;
   background: transparent !important;
-  border-color: transparent !important;
+  border: none !important;
   margin-bottom: 1px !important;
 }
 .fc-daygrid-event .fc-event-main {
   padding: 1px 2px !important;
 }
+.fc-daygrid-event .fc-event-main-frame {
+  display: flex !important;
+}
 .fc-daygrid-event-dot {
   display: none !important;
+}
+
+/* FullCalendar's column header row (the Sun/Mon/.../Sat labels) is
+   position: sticky with an explicit background: var(--fc-page-bg-color) so
+   day cells don't show through it while scrolling. That variable defaults
+   to white and is never dark-mode aware, so in dark mode it stayed a solid
+   white bar with our page's light dark-mode text color rendered on top —
+   low contrast. Re-pointing FullCalendar's own theme variables at our
+   palette fixes this (and borders/today-highlight/more-link) at the
+   source instead of overriding individual selectors. */
+.dark .fc {
+  --fc-page-bg-color: #18181b;
+  --fc-neutral-bg-color: #27272a;
+  --fc-neutral-text-color: #a1a1aa;
+  --fc-border-color: #3f3f46;
+  --fc-today-bg-color: rgba(202, 138, 4, 0.15);
+  --fc-more-link-bg-color: #3f3f46;
+  --fc-more-link-text-color: #e4e4e7;
+}
+
+/* FullCalendar's header toolbar (prev/next/today, title, view switcher) is
+   a non-wrapping flex row by default — three groups like that don't fit a
+   phone-width screen without either overflowing or squishing everything
+   unreadably small. Letting it wrap onto its own lines keeps every button
+   at a usable tap size instead. */
+@media (max-width: 640px) {
+  .fc .fc-toolbar {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.5rem;
+  }
+  .fc .fc-toolbar-chunk {
+    display: flex;
+    justify-content: center;
+  }
+  .fc .fc-toolbar-title {
+    font-size: 1.05rem;
+  }
 }

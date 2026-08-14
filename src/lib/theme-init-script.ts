@@ -1,10 +1,9 @@
 // Sets the .dark class on <html> before first paint, so there's no flash of
-// the wrong theme. Rendered as a raw <script> directly from the root layout
-// (a Server Component) rather than via a client component + a theming
-// library — a client component re-rendering the same script tag on the
-// client is what React 19 warns about ("scripts are never executed when
-// rendering on the client"), which doesn't apply to static Server Component
-// output.
+// the wrong theme. Rendered via next/script with strategy="beforeInteractive"
+// from the root layout — a raw <script> tag triggers Next 16's "scripts are
+// never executed when rendering on the client" warning even from a Server
+// Component, and beforeInteractive is the documented way to guarantee this
+// runs before hydration (see node_modules/next/dist/docs/.../scripts.md).
 export const THEME_INIT_SCRIPT = `
 (function () {
   try {

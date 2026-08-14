@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
@@ -36,27 +36,18 @@ export interface DepartmentLegendEntry {
 function renderEventContent(arg: EventContentArg) {
   const props = arg.event.extendedProps as CalendarEventInput["extendedProps"];
   const isDone = props.taskStatus === "done";
-  const isBlocked = props.taskStatus === "blocked";
-  const isOverdue =
-    !isDone &&
-    !isBlocked &&
-    props.type === "task" &&
-    arg.event.start &&
-    arg.event.start.getTime() < Date.now();
 
   return (
     <div className={clsx("flex min-w-0 items-center gap-1 px-0.5", isDone && "opacity-60")}>
       {/* Drawn ourselves rather than relying on FullCalendar's own dot/
           background coloring, which is what differs between its two
           inconsistent display modes — see the CSS override in
-          globals.css for why. */}
+          globals.css for why. Color alone (via taskCalendarColor) already
+          distinguishes overdue/blocked/done, so no separate icon is needed. */}
       <span
         className="h-1.5 w-1.5 shrink-0 rounded-full"
         style={{ background: arg.event.backgroundColor || arg.event.borderColor }}
       />
-      <span className="shrink-0 text-[0.7rem]">
-        {props.type === "meeting" ? "🗓️" : isBlocked ? "🚫" : isOverdue ? "⚠️" : "📋"}
-      </span>
       <span className={clsx("truncate", isDone && "line-through")}>{arg.event.title}</span>
     </div>
   );
@@ -71,6 +62,21 @@ export function CalendarView({
 }) {
   const router = useRouter();
   const [selected, setSelected] = useState<CalendarEventInput | null>(null);
+  const calendarRef = useRef<FullCalendar>(null);
+
+  // A full 7-column month grid has no room left for readable content once
+  // day cells shrink to phone width — titles truncate to a character or
+  // two. Defaulting to the list/agenda view below the sm breakpoint keeps
+  // it usable there; initialView itself can't be responsive (FullCalendar
+  // only reads it once, on mount), so this switches it imperatively via
+  // the calendar's own API right after mount instead. Deliberately only
+  // runs once on mount rather than on every resize, so it doesn't fight a
+  // view someone picks manually from the toolbar mid-session.
+  useEffect(() => {
+    if (window.innerWidth < 640) {
+      calendarRef.current?.getApi().changeView("listWeek");
+    }
+  }, []);
 
   function handleEventClick(arg: EventClickArg) {
     const props = arg.event.extendedProps as CalendarEventInput["extendedProps"];
@@ -91,6 +97,7 @@ export function CalendarView({
   return (
     <div className="rounded-xl border border-zinc-200 bg-white p-3 dark:border-zinc-800 dark:bg-zinc-900">
       <FullCalendar
+        ref={calendarRef}
         plugins={[dayGridPlugin, timeGridPlugin, listPlugin, interactionPlugin]}
         initialView="dayGridMonth"
         headerToolbar={{
