@@ -61,8 +61,12 @@ export default async function DashboardPage() {
         .eq("profile_id", profile.id)
         .maybeSingle();
       if (prefs) {
-        enabledWidgets = prefs.enabled_widgets;
-        widgetOrder = prefs.widget_order;
+        // Stored as plain text[] columns — only ever written by
+        // widget-catalog.tsx using BossDashboardWidget values, so this
+        // narrowing reflects a real app-level invariant the DB schema
+        // itself doesn't (and can't, for a text[] column) express.
+        enabledWidgets = prefs.enabled_widgets as BossDashboardWidget[];
+        widgetOrder = prefs.widget_order as BossDashboardWidget[];
       }
     }
 

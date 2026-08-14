@@ -3,6 +3,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { encrypt } from "@/lib/encryption";
 import { friendlyError } from "@/lib/friendly-error";
+import { nullableRpcArg } from "@/lib/rpc-utils";
 import { revalidateTaskRelatedPaths } from "@/lib/revalidate-task-paths";
 
 // Marks the caller's active step done — or, if the step requires the next
@@ -42,7 +43,10 @@ export async function finishUnconfirmableStep(taskId: string, assigneeId: string
 
 export async function blockStep(taskId: string, assigneeId: string, notes: string) {
   const supabase = await createClient();
-  const { error } = await supabase.rpc("block_step_rpc", { p_assignee_id: assigneeId, p_notes: notes || null });
+  const { error } = await supabase.rpc("block_step_rpc", {
+    p_assignee_id: assigneeId,
+    p_notes: nullableRpcArg(notes || null),
+  });
   if (error) return { error: friendlyError(error, "We couldn't mark that step blocked") };
   revalidateTaskRelatedPaths(taskId);
   return { error: null };

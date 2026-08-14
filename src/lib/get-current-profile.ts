@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import type { Department, Profile } from "@/lib/types";
+import type { Department, Profile, Role } from "@/lib/types";
 
 export interface CurrentUser {
   profile: Profile;
@@ -25,6 +25,11 @@ export async function getCurrentProfile(): Promise<CurrentUser | null> {
 
   if (!profile) return null;
 
+  // role is a plain `text` column (CHECK-constrained, not a native enum),
+  // so the generated type is just `string` — narrowed since every
+  // consumer expects the real Role union.
+  const typedProfile: Profile = { ...profile, role: profile.role as Role };
+
   let department: Department | null = null;
   if (profile.department_id) {
     const { data } = await supabase
@@ -35,5 +40,5 @@ export async function getCurrentProfile(): Promise<CurrentUser | null> {
     department = data ?? null;
   }
 
-  return { profile, department };
+  return { profile: typedProfile, department };
 }

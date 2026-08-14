@@ -4,6 +4,7 @@ import { getCurrentProfile } from "@/lib/get-current-profile";
 import { decrypt } from "@/lib/encryption";
 import { HistoryItem } from "@/components/history/history-item";
 import { EmptyState } from "@/components/ui/card";
+import type { TaskStatus } from "@/lib/types";
 import Link from "next/link";
 
 export default async function HistoryPage({
@@ -54,9 +55,13 @@ export default async function HistoryPage({
 
   const auditByTask = new Map<string, typeof auditRows>();
   for (const row of auditRows ?? []) {
-    const list = auditByTask.get(row.task_id) ?? [];
+    // audit_log.task_id is nullable at the column level (some entries
+    // aren't tied to a task), but every row here came from `.in("task_id",
+    // taskIds)` above, so it's guaranteed non-null for this specific query.
+    const taskId = row.task_id!;
+    const list = auditByTask.get(taskId) ?? [];
     list.push(row);
-    auditByTask.set(row.task_id, list);
+    auditByTask.set(taskId, list);
   }
 
   const hasFilters = Boolean(department || from || to || dateModeParam);
@@ -154,7 +159,7 @@ export default async function HistoryPage({
               key={t.id}
               id={t.id}
               title={t.title}
-              status={t.status}
+              status={t.status as TaskStatus}
               departmentName={(t.creator_department as unknown as { name: string } | null)?.name ?? null}
               updatedAt={t.updated_at}
               deadline={t.deadline}

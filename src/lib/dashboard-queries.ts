@@ -12,7 +12,12 @@ type SupabaseClient = Awaited<ReturnType<typeof createClient>>;
 // they don't themselves belong to.
 async function getDepartmentTaskIds(supabase: SupabaseClient, departmentId: string): Promise<string[]> {
   const { data } = await supabase.from("task_departments").select("task_id").eq("department_id", departmentId);
-  return Array.from(new Set((data ?? []).map((r) => r.task_id)));
+  // task_departments is a view (0008_department_task_attribution.sql), so
+  // its columns are generated as nullable regardless of the underlying
+  // (always non-null) source data — filtering rather than asserting stays
+  // correct even if that ever stops being true.
+  const ids = (data ?? []).map((r) => r.task_id).filter((id): id is string => id !== null);
+  return Array.from(new Set(ids));
 }
 
 export interface CompletionRate {

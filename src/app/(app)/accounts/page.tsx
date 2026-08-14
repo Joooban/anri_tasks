@@ -1,9 +1,10 @@
 import { redirect } from "next/navigation";
 import { getCurrentProfile } from "@/lib/get-current-profile";
-import { getDepartments, getProfiles } from "@/lib/queries";
+import { getDepartments, getProfiles, getTaskTypes } from "@/lib/queries";
 import { createClient } from "@/lib/supabase/server";
 import { AccountsTable } from "@/components/accounts/accounts-table";
 import { AllowedEmails, type AllowedEmailItem } from "@/components/accounts/allowed-emails";
+import { TaskTypesManager } from "@/components/accounts/task-types-manager";
 
 export default async function AccountsPage() {
   const current = await getCurrentProfile();
@@ -13,9 +14,10 @@ export default async function AccountsPage() {
   }
 
   const supabase = await createClient();
-  const [profiles, departments, { data: allowedEmails }] = await Promise.all([
+  const [profiles, departments, taskTypes, { data: allowedEmails }] = await Promise.all([
     getProfiles(),
     getDepartments(),
+    getTaskTypes(),
     supabase.rpc("list_allowed_emails_rpc"),
   ]);
 
@@ -29,6 +31,7 @@ export default async function AccountsPage() {
         </p>
       </div>
       <AllowedEmails items={(allowedEmails ?? []) as AllowedEmailItem[]} />
+      <TaskTypesManager items={taskTypes} />
       <AccountsTable profiles={profiles} departments={departments} myProfileId={current.profile.id} />
     </div>
   );

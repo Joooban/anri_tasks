@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createServiceRoleClient } from "@/lib/supabase/service-role";
 import { encrypt, encryptNullable, encryptBuffer } from "@/lib/encryption";
 import { friendlyError } from "@/lib/friendly-error";
+import { nullableRpcArg } from "@/lib/rpc-utils";
 import { revalidateTaskRelatedPaths } from "@/lib/revalidate-task-paths";
 
 // Attachments are encrypted before upload (see the upload loop below), so
@@ -106,9 +107,9 @@ export async function createTask(
   // client-side inserts — see 0013_create_task_rpc.sql for why.
   const { data: taskId, error: rpcError } = await supabase.rpc("create_task_rpc", {
     p_title: encrypt(input.title),
-    p_description: encryptNullable(input.description),
-    p_task_type_id: input.task_type_id,
-    p_deadline: input.deadline ? new Date(input.deadline).toISOString() : null,
+    p_description: nullableRpcArg(encryptNullable(input.description)),
+    p_task_type_id: nullableRpcArg(input.task_type_id),
+    p_deadline: nullableRpcArg(input.deadline ? new Date(input.deadline).toISOString() : null),
     p_is_personal: input.is_personal,
     p_chain: input.chain,
     p_visibility: input.visibility,

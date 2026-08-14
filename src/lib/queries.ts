@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { decrypt, decryptNullable } from "@/lib/encryption";
-import type { Department, Profile, TaskType } from "@/lib/types";
+import type { Department, Profile, Role, TaskStatus, TaskType } from "@/lib/types";
 import type { TaskListItem } from "@/components/tasks/task-card";
 
 const TASK_LIST_SELECT = `
@@ -72,7 +72,10 @@ export async function getFullAccountDepartments(): Promise<Department[]> {
 export async function getProfiles(): Promise<Profile[]> {
   const supabase = await createClient();
   const { data } = await supabase.from("profiles").select("*").order("full_name");
-  return data ?? [];
+  // role is a plain `text` column (CHECK-constrained, not a native enum),
+  // so the generated type is just `string` — narrowed to the real Role
+  // union every consumer expects.
+  return (data ?? []).map((p) => ({ ...p, role: p.role as Role }));
 }
 
 export async function getTaskTypes(): Promise<TaskType[]> {
@@ -146,7 +149,15 @@ export async function getTaskDetail(id: string) {
   if (!task) return null;
 
   return {
-    task: { ...task, title: decrypt(task.title), description: decryptNullable(task.description) },
+    // status is a plain `text` column at the DB level (CHECK-constrained,
+    // not a native Postgres enum), so the generated type is just `string`
+    // — narrowed here since every consumer expects the real TaskStatus union.
+    task: {
+      ...task,
+      title: decrypt(task.title),
+      description: decryptNullable(task.description),
+      status: task.status as TaskStatus,
+    },
     assignees: (assignees ?? []) as unknown as TaskDetailAssignee[],
     visibility: visibility ?? [],
     attachments: attachments ?? [],

@@ -1,4 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
+import type { Database } from "@/lib/database.types";
 
 // SECURITY: bypasses RLS entirely. Only ever call this from trusted
 // server-side code (Server Actions) that has already verified the caller
@@ -17,7 +18,7 @@ import { createClient } from "@supabase/supabase-js";
 // Storage (which isn't reachable through a plain Postgres function since
 // the actual file bytes go through Supabase's Storage API, not PostgREST).
 export function createServiceRoleClient() {
-  return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
+  return createClient<Database>(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
     auth: { autoRefreshToken: false, persistSession: false },
   });
 }

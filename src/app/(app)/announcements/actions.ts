@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { encrypt } from "@/lib/encryption";
 import { friendlyError } from "@/lib/friendly-error";
+import { nullableRpcArg } from "@/lib/rpc-utils";
 
 export interface PostAnnouncementState {
   error: string | null;
@@ -50,8 +51,8 @@ export async function postAnnouncement(
     p_body: encrypt(body),
     p_pinned: pinned,
     p_company_wide: companyWide,
-    p_publish_at: publishAtRaw,
-    p_expires_at: expiresAtRaw,
+    p_publish_at: nullableRpcArg(publishAtRaw),
+    p_expires_at: nullableRpcArg(expiresAtRaw),
   });
 
   if (error || !announcementId) return { error: friendlyError(error, "We couldn't post the announcement") };
@@ -83,8 +84,8 @@ export async function updateAnnouncement(
     p_title: encrypt(title),
     p_body: encrypt(body),
     p_pinned: pinned,
-    p_publish_at: publishAtRaw,
-    p_expires_at: expiresAtRaw,
+    p_publish_at: nullableRpcArg(publishAtRaw),
+    p_expires_at: nullableRpcArg(expiresAtRaw),
   });
 
   if (error) return { error: friendlyError(error, "We couldn't update the announcement") };

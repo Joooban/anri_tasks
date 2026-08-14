@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { friendlyError } from "@/lib/friendly-error";
+import { nullableRpcArg } from "@/lib/rpc-utils";
 
 export interface CreateMeetingState {
   error: string | null;
@@ -42,10 +43,10 @@ export async function createMeeting(
 
   const { data: eventId, error } = await supabase.rpc("create_meeting_rpc", {
     p_title: title,
-    p_description: description,
+    p_description: nullableRpcArg(description),
     p_start_at: new Date(startAt).toISOString(),
-    p_end_at: endAt ? new Date(endAt).toISOString() : null,
-    p_meeting_link: meetingLink,
+    p_end_at: nullableRpcArg(endAt ? new Date(endAt).toISOString() : null),
+    p_meeting_link: nullableRpcArg(meetingLink),
     p_company_wide: isCompanyWide,
   });
 
