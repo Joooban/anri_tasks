@@ -10,6 +10,19 @@ A task relay/handoff management system built for a real company (ANRI / RCMC BNL
 
 **Important**: This Next.js version has breaking changes vs. training-data knowledge (`proxy.ts` replaces `middleware.ts`, `next/script` required for inline scripts, etc.). Docs live in `node_modules/next/dist/docs/` — check there before assuming standard Next.js behavior. See `AGENTS.md` at repo root.
 
+## Deployment
+
+**Live** at `https://anri-tasks.vercel.app`. Source is on GitHub at `github.com/Joooban/anri_tasks` (`main` branch) — Vercel auto-deploys on every push to `main`. Smoke-tested post-deploy (sign-in, task creation, announcements, attachment upload/download round-trip through encryption) and confirmed working.
+
+Three places had to be told about the production URL, and any *future* domain change (e.g. a custom domain) needs the same three updated again:
+1. **Vercel env var** `NEXT_PUBLIC_SITE_URL` — set to the production URL.
+2. **Supabase → Authentication → URL Configuration** — "Site URL" changed from `http://localhost:3000` to the production URL, and the production URL added to the "Redirect URLs" allowlist (kept the localhost entry too, so local dev still works).
+3. Google Cloud Console did **not** need updating — sign-in goes through Supabase's managed Google OAuth, so the redirect URI registered there points at Supabase's own fixed callback (`https://<project-ref>.supabase.co/auth/v1/callback`), not this app's domain.
+
+All secrets (`SUPABASE_SERVICE_ROLE_KEY`, `ENCRYPTION_KEY`, the Supabase URL/anon key) are set as Vercel environment variables — server-only ones (service role, encryption key) are not exposed to the client since they're never `NEXT_PUBLIC_`-prefixed. All 22 migrations (`0001`–`0022`) have been applied to the Supabase project this deployment points at.
+
+**Onboarding a real person now requires two steps in order**: add their email to the allowlist (`/accounts` → "Allowed emails", boss_boss/supervisor only) *before* they attempt to sign in — signing in first will fail with "not approved yet" and they'll need to retry after being added. This is a reversal of the pre-allowlist flow ("sign in, then get set up") worth calling out explicitly in the SOP.
+
 ## Roles & standing design principles
 
 Roles: `employee` < `department_head` < `boss_boss` / `supervisor` (president-level).
@@ -114,14 +127,15 @@ Fix: `allowed_emails` table (`0022_email_allowlist.sql`), gated entirely behind 
 - **History filter form**: fields now take full width on mobile (`w-full sm:w-auto`) instead of an unpredictable content-based width. Note: the native `<select>` dropdown list itself (what you see when tapping "Department") is OS/browser-rendered, not something this app's CSS can restyle — flagged to the client as expected behavior, not a bug, with the option to build a custom dropdown component if it's worth the effort later.
 - **Dashboard card balance**: cards in the same grid row weren't equal height (`Card` component didn't stretch to fill its grid cell), which read as inconsistent. First fix (`h-full` on every `Card`) was reverted after the client flagged it looking worse for badly-mismatched pairs (a 2-stat completion-rate card force-stretched to match an 11-department list left huge dead space). The actual fix: don't force mismatched content to match heights at all — `department_health` and `completion_rate` were made full-width rows (`lg:col-span-2` in `dashboard/page.tsx`) instead of being paired 50/50 with something a different natural size. `department-health-grid.tsx` also had truncated department names (`truncate` class cutting off names like "Mine Environmental Protection and Enhancement Department") — switched to a wrapping list instead of a pill grid.
 
-## Currently uncommitted
+## Commit/deploy status
 
-As of this writing, everything from this session — delete-task-button, announcement edit/delete, calendar fixes, emoji removal, font-size bump, mobile responsiveness, dashboard balance fixes, the security review fixes (`0019`, `0020`, `0021`), the encryption work, migration `0018`, the service-role attachment-upload fix, the History deadline filter, the chain-step validation fix, the email allowlist (`0022`), and this doc itself — is uncommitted in the working tree. Nothing has been committed since `739fc62` ("Fix-height every History filter control so they align exactly"). Confirm with the user before committing/pushing, per standard practice in this project. **Also confirm `.env.local` is not staged** — it now holds the service role secret and the encryption key in addition to the anon key; already gitignored (confirmed via `git check-ignore`), but worth a second look given how sensitive those are.
+Everything through this session (delete-task-button, announcement edit/delete, calendar fixes, emoji removal, font-size bump, mobile responsiveness, dashboard balance fixes, the security review fixes, the encryption work, the History deadline filter, the chain-step validation fix, the email allowlist, this doc) is committed as a single commit on `main` and pushed to `github.com/Joooban/anri_tasks` — see the Deployment section above. `.env.local` was confirmed never tracked/staged (gitignored) before committing. Working tree was clean as of the last push.
 
 ## Known gaps / not yet done
 
-- `SUPABASE_SERVICE_ROLE_KEY` and `ENCRYPTION_KEY` exist only in local `.env.local` — neither has a production/hosting env var counterpart yet. Both must be added wherever this deploys, server-side only. **`ENCRYPTION_KEY` specifically needs a durable backup outside this repo before going near production data** — if it's lost, every encrypted row becomes permanently unreadable with no recovery path.
-- Migrations `0019`–`0022` (security review, the MIME-type fix, email allowlist) need to be run in Supabase — status as of this writing not yet confirmed for `0022` specifically.
+- Both `SUPABASE_SERVICE_ROLE_KEY` and `ENCRYPTION_KEY` are now set in Vercel (server-only, not `NEXT_PUBLIC_`) as well as local `.env.local`. **`ENCRYPTION_KEY` still needs a durable backup outside both of those** (a password manager) — if it's lost, every encrypted row becomes permanently unreadable with no recovery path. Not yet confirmed done.
+- All migrations `0001`–`0022` confirmed applied to the Supabase project this deployment uses, including `0022` (email allowlist) — initially missed when deployment happened (built but never handed to the client to run), caught when production sign-in failed closed with "not approved yet" for every account. Lesson: a migration existing in the repo isn't the same as it being run — this class of bug has now happened three times this project (see the "migrations are not auto-applied" gotcha above), reinforcing that this is the single highest-value thing for the SOP to formalize.
+- Onboarding still needs each new person's email added to the allowlist before their first sign-in attempt (see Deployment section) — not yet done for the actual team, deferred by the client for now.
 - A Content-Security-Policy header was deliberately not added — needs real testing against Google OAuth/Supabase/FullCalendar/the service worker first.
 - Org chart sub-units unseeded (blocked on client input, not a code issue).
 - Task type management is still SQL-editable only, no admin UI.
