@@ -781,7 +781,6 @@ export type Database = {
         Args: { p_department_id: string; p_profile_id: string }
         Returns: boolean
       }
-      can_create_task: { Args: never; Returns: boolean }
       can_view_task: { Args: { p_task_id: string }; Returns: boolean }
       cancel_task_rpc: { Args: { p_task_id: string }; Returns: undefined }
       complete_step_rpc: { Args: { p_assignee_id: string }; Returns: undefined }
