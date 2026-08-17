@@ -1,3 +1,4 @@
+import { formatDateTime } from "@/lib/format-datetime";
 import type { AdminAuditEntry } from "@/lib/admin-queries";
 
 function formatAction(action: string): string {
@@ -24,12 +25,7 @@ export function AdminActivityTrail({
       {items.map((entry) => (
         <li key={entry.id} className="flex flex-wrap items-baseline gap-x-2 text-xs">
           <span className="shrink-0 text-zinc-400">
-            {new Date(entry.created_at).toLocaleString(undefined, {
-              month: "short",
-              day: "numeric",
-              hour: "numeric",
-              minute: "2-digit",
-            })}
+            {formatDateTime(entry.created_at, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}
           </span>
           <span className="text-zinc-700 dark:text-zinc-300">
             {entry.actor?.full_name ?? entry.actor?.email ?? "System"} — {formatAction(entry.action)}

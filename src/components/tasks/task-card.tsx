@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { TaskStatusBadge } from "@/components/tasks/task-status-badge";
 import { departmentColor } from "@/lib/constants";
+import { formatDate } from "@/lib/format-datetime";
 import type { Task } from "@/lib/types";
 
 export interface TaskListItem extends Task {
@@ -10,9 +11,7 @@ export interface TaskListItem extends Task {
 }
 
 export function TaskCard({ task }: { task: TaskListItem }) {
-  const deadline = task.deadline
-    ? new Date(task.deadline).toLocaleDateString(undefined, { month: "short", day: "numeric" })
-    : null;
+  const deadline = task.deadline ? formatDate(task.deadline, { month: "short", day: "numeric" }) : null;
 
   return (
     <Link

@@ -10,6 +10,7 @@ import { CommentsSection } from "@/components/tasks/comments-section";
 import { DeleteTaskButton } from "@/components/tasks/delete-task-button";
 import { Card, CardTitle, EmptyState } from "@/components/ui/card";
 import { PersonLabel } from "@/components/ui/person-label";
+import { formatDateTime } from "@/lib/format-datetime";
 import { cancelTask } from "@/app/(app)/tasks/[id]/actions";
 
 export default async function TaskDetailPage({
@@ -82,12 +83,7 @@ export default async function TaskDetailPage({
           <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
             Created by <PersonLabel person={task.creator} />
             {task.deadline &&
-              ` · Due ${new Date(task.deadline).toLocaleString(undefined, {
-                month: "short",
-                day: "numeric",
-                hour: "numeric",
-                minute: "2-digit",
-              })}`}
+              ` · Due ${formatDateTime(task.deadline, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}`}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -176,12 +172,7 @@ export default async function TaskDetailPage({
           {auditLog.map((entry) => (
             <li key={entry.id} className="flex items-baseline gap-2 text-xs">
               <span className="text-zinc-400">
-                {new Date(entry.created_at).toLocaleString(undefined, {
-                  month: "short",
-                  day: "numeric",
-                  hour: "numeric",
-                  minute: "2-digit",
-                })}
+                {formatDateTime(entry.created_at, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}
               </span>
               <span className="text-zinc-700 dark:text-zinc-300">
                 {entry.actor ? <PersonLabel person={entry.actor} /> : "System"} — {entry.action.replace(/_/g, " ")}

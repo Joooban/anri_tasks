@@ -7,15 +7,11 @@ import { STEP_STATUS_LABELS, type Role } from "@/lib/types";
 import { completeStep, confirmStep, blockStep, unblockStep, finishUnconfirmableStep } from "@/app/(app)/tasks/[id]/actions";
 import { PersonLabel } from "@/components/ui/person-label";
 import type { TaskDetailAssignee } from "@/lib/queries";
+import { formatDateTime } from "@/lib/format-datetime";
 
 function formatTime(value: string | null) {
   if (!value) return null;
-  return new Date(value).toLocaleString(undefined, {
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  });
+  return formatDateTime(value, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
 }
 
 function StepLabel({ step }: { step: TaskDetailAssignee }) {

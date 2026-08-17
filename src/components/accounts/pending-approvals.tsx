@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { approveAdminRoleRequest, rejectAdminRoleRequest } from "@/app/(app)/accounts/approval-actions";
 import { Card, CardTitle } from "@/components/ui/card";
+import { formatDateTime } from "@/lib/format-datetime";
 import type { PendingApprovalItem } from "@/lib/admin-queries";
 
 export function PendingApprovals({ items }: { items: PendingApprovalItem[] }) {
@@ -53,12 +54,7 @@ export function PendingApprovals({ items }: { items: PendingApprovalItem[] }) {
             </p>
             <p className="text-xs text-zinc-400">
               Requested by {item.requestedBy?.full_name ?? item.requestedBy?.email ?? "Unknown"} ·{" "}
-              {new Date(item.created_at).toLocaleString(undefined, {
-                month: "short",
-                day: "numeric",
-                hour: "numeric",
-                minute: "2-digit",
-              })}
+              {formatDateTime(item.created_at, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}
             </p>
 
             {rejectingId === item.id ? (

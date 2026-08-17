@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Card, CardTitle } from "@/components/ui/card";
 import { LocalDateTimeField } from "@/components/ui/local-datetime-field";
 import { updateAnnouncement, deleteAnnouncement } from "@/app/(app)/announcements/actions";
+import { formatDateTime } from "@/lib/format-datetime";
 import type { AnnouncementItem } from "@/lib/dashboard-queries";
 
 function EditAnnouncementForm({ item, onDone }: { item: AnnouncementItem; onDone: () => void }) {
@@ -95,20 +96,9 @@ function AnnouncementView({ item }: { item: AnnouncementItem }) {
       <p className="mt-0.5 text-sm text-zinc-600 dark:text-zinc-400">{item.body}</p>
       <p className="mt-1 text-xs text-zinc-400">
         {item.department?.name ?? "Company-wide"} · {item.author?.full_name ?? item.author?.email} ·{" "}
-        {new Date(item.publish_at).toLocaleString(undefined, {
-          month: "short",
-          day: "numeric",
-          year: "numeric",
-          hour: "numeric",
-          minute: "2-digit",
-        })}
+        {formatDateTime(item.publish_at, { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" })}
         {item.expires_at &&
-          ` · Expires ${new Date(item.expires_at).toLocaleString(undefined, {
-            month: "short",
-            day: "numeric",
-            hour: "numeric",
-            minute: "2-digit",
-          })}`}
+          ` · Expires ${formatDateTime(item.expires_at, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}`}
       </p>
     </>
   );

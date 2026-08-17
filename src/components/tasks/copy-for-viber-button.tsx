@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { TASK_STATUS_LABELS, type TaskStatus } from "@/lib/types";
+import { formatDateTime } from "@/lib/format-datetime";
 
 export function CopyForViberButton({
   taskId,
@@ -25,12 +26,7 @@ export function CopyForViberButton({
       `Status: ${TASK_STATUS_LABELS[status]}`,
       activeAssigneeLabel ? `Waiting on: ${activeAssigneeLabel}` : null,
       deadline
-        ? `Deadline: ${new Date(deadline).toLocaleString(undefined, {
-            month: "short",
-            day: "numeric",
-            hour: "numeric",
-            minute: "2-digit",
-          })}`
+        ? `Deadline: ${formatDateTime(deadline, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}`
         : null,
       `${siteUrl}/tasks/${taskId}`,
     ].filter(Boolean);

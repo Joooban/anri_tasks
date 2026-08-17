@@ -4,6 +4,7 @@ import clsx from "clsx";
 import { getCurrentProfile } from "@/lib/get-current-profile";
 import { getPreview } from "@/lib/get-preview";
 import { getDepartments, getFullAccountDepartments } from "@/lib/queries";
+import { formatDate } from "@/lib/format-datetime";
 import {
   getCompletionRate,
   completionRateTrend,
@@ -106,7 +107,7 @@ export default async function DashboardPage() {
                 : t.reason === "blocked"
                   ? "Blocked"
                   : t.deadline
-                    ? `Due ${new Date(t.deadline).toLocaleDateString(undefined, { month: "short", day: "numeric" })}`
+                    ? `Due ${formatDate(t.deadline, { month: "short", day: "numeric" })}`
                     : "",
           }))}
         />

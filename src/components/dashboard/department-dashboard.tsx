@@ -10,6 +10,7 @@ import { CompletionRateCard } from "@/components/dashboard/completion-rate-card"
 import { TaskMiniList } from "@/components/dashboard/task-mini-list";
 import { AnnouncementsFeed } from "@/components/dashboard/announcements-feed";
 import { Card, CardTitle, EmptyState } from "@/components/ui/card";
+import { formatDate, formatDateTime } from "@/lib/format-datetime";
 
 export async function DepartmentDashboard({
   departmentId,
@@ -68,7 +69,7 @@ export async function DepartmentDashboard({
                 <li key={m.id} className="flex items-center justify-between gap-2 text-sm">
                   <span className="text-zinc-800 dark:text-zinc-200">{m.title}</span>
                   <span className="flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400">
-                    {new Date(m.start_at).toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}
+                    {formatDateTime(m.start_at, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}
                     {m.meeting_link && (
                       <a
                         href={m.meeting_link}
@@ -98,7 +99,7 @@ export async function DepartmentDashboard({
                 : t.reason === "blocked"
                   ? "Blocked"
                   : t.deadline
-                    ? `Due ${new Date(t.deadline).toLocaleDateString(undefined, { month: "short", day: "numeric" })}`
+                    ? `Due ${formatDate(t.deadline, { month: "short", day: "numeric" })}`
                     : "",
           }))}
         />
@@ -109,7 +110,7 @@ export async function DepartmentDashboard({
           items={completed.map((t) => ({
             id: t.id,
             title: t.title,
-            meta: new Date(t.updated_at).toLocaleDateString(undefined, { month: "short", day: "numeric" }),
+            meta: formatDate(t.updated_at, { month: "short", day: "numeric" }),
           }))}
         />
 

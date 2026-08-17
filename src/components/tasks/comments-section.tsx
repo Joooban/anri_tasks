@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { addComment } from "@/app/(app)/tasks/[id]/actions";
 import { PersonLabel } from "@/components/ui/person-label";
+import { formatDateTime } from "@/lib/format-datetime";
 
 export interface CommentItem {
   id: string;
@@ -41,12 +42,7 @@ export function CommentsSection({ taskId, comments }: { taskId: string; comments
                   <PersonLabel person={c.author} />
                 </span>
                 <span className="text-xs text-zinc-400">
-                  {new Date(c.created_at).toLocaleString(undefined, {
-                    month: "short",
-                    day: "numeric",
-                    hour: "numeric",
-                    minute: "2-digit",
-                  })}
+                  {formatDateTime(c.created_at, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}
                 </span>
               </div>
               <p className="whitespace-pre-wrap text-zinc-700 dark:text-zinc-300">{c.body}</p>

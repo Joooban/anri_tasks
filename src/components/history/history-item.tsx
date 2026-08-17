@@ -5,6 +5,7 @@ import Link from "next/link";
 import { TaskStatusBadge } from "@/components/tasks/task-status-badge";
 import { DeleteTaskButton } from "@/components/tasks/delete-task-button";
 import { PersonLabel } from "@/components/ui/person-label";
+import { formatDate, formatDateTime } from "@/lib/format-datetime";
 import type { TaskStatus } from "@/lib/types";
 
 export interface HistoryAuditEntry {
@@ -44,9 +45,8 @@ export function HistoryItem({
           </Link>
           <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">
             {departmentName ?? "—"} · Updated{" "}
-            {new Date(updatedAt).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}
-            {deadline &&
-              ` · Due ${new Date(deadline).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}`}
+            {formatDate(updatedAt, { month: "short", day: "numeric", year: "numeric" })}
+            {deadline && ` · Due ${formatDate(deadline, { month: "short", day: "numeric", year: "numeric" })}`}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -69,12 +69,7 @@ export function HistoryItem({
             auditLog.map((entry) => (
               <li key={entry.id} className="flex items-baseline gap-2 text-xs">
                 <span className="text-zinc-400">
-                  {new Date(entry.created_at).toLocaleString(undefined, {
-                    month: "short",
-                    day: "numeric",
-                    hour: "numeric",
-                    minute: "2-digit",
-                  })}
+                  {formatDateTime(entry.created_at, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}
                 </span>
                 <span className="text-zinc-700 dark:text-zinc-300">
                   {entry.actor ? <PersonLabel person={entry.actor} /> : "System"} — {entry.action.replace(/_/g, " ")}
