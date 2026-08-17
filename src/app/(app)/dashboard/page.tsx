@@ -6,6 +6,10 @@ import { getPreview } from "@/lib/get-preview";
 import { getDepartments, getFullAccountDepartments } from "@/lib/queries";
 import {
   getCompletionRate,
+  completionRateTrend,
+  getAllTimeCompletion,
+  getTaskStatusBreakdown,
+  getDepartmentCompletionExtremes,
   getDepartmentHealthGrid,
   getNeedsAttentionTasks,
   getAnnouncements,
@@ -40,14 +44,20 @@ export default async function DashboardPage() {
 
   if (profile.role === "boss_boss" || profile.role === "supervisor") {
     const departments = await getFullAccountDepartments();
-    const [today, week, month, health, needsAttention, announcements] = await Promise.all([
-      getCompletionRate(1),
-      getCompletionRate(7),
-      getCompletionRate(30),
-      getDepartmentHealthGrid(departments),
-      getNeedsAttentionTasks(),
-      getAnnouncements(),
-    ]);
+    const [today, week, lastWeek, month, lastMonth, allTime, statusBreakdown, extremes, health, needsAttention, announcements] =
+      await Promise.all([
+        getCompletionRate(1),
+        getCompletionRate(7),
+        getCompletionRate(7, undefined, 7),
+        getCompletionRate(30),
+        getCompletionRate(30, undefined, 30),
+        getAllTimeCompletion(),
+        getTaskStatusBreakdown(),
+        getDepartmentCompletionExtremes(30, departments),
+        getDepartmentHealthGrid(departments),
+        getNeedsAttentionTasks(),
+        getAnnouncements(),
+      ]);
 
     let enabledWidgets: BossDashboardWidget[] = [...BOSS_DASHBOARD_WIDGETS];
     let widgetOrder: BossDashboardWidget[] = [...BOSS_DASHBOARD_WIDGETS];
@@ -70,7 +80,19 @@ export default async function DashboardPage() {
     }
 
     const widgetMap: Record<BossDashboardWidget, ReactNode> = {
-      completion_rate: <CompletionRateCard today={today} week={week} month={month} />,
+      completion_rate: (
+        <CompletionRateCard
+          today={today}
+          week={week}
+          weekTrend={completionRateTrend(week, lastWeek)}
+          month={month}
+          monthTrend={completionRateTrend(month, lastMonth)}
+          allTime={allTime}
+          statusBreakdown={statusBreakdown}
+          best={extremes.best}
+          worst={extremes.worst}
+        />
+      ),
       needs_attention: (
         <TaskMiniList
           title="Needs attention"

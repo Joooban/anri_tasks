@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createServiceRoleClient } from "@/lib/supabase/service-role";
 import { decrypt } from "@/lib/encryption";
 import type { HealthStatus } from "@/lib/constants";
-import type { Department } from "@/lib/types";
+import type { Department, TaskStatus } from "@/lib/types";
 
 type SupabaseClient = Awaited<ReturnType<typeof createClient>>;
 
@@ -28,13 +28,18 @@ export interface CompletionRate {
   percent: number;
 }
 
-// Completion rate over tasks created or updated in the last `days` days,
-// optionally scoped to one department.
-export async function getCompletionRate(days: number, departmentId?: string): Promise<CompletionRate> {
+// Completion rate over tasks created in the `days`-day window ending
+// `offsetDays` ago (offsetDays = 0, the default, means "ending now") —
+// optionally scoped to one department. The offset exists so a caller can
+// pull the *previous* period's rate for a trend comparison (e.g.
+// offsetDays = 7 with days = 7 is "the week before this week").
+export async function getCompletionRate(days: number, departmentId?: string, offsetDays = 0): Promise<CompletionRate> {
   const supabase = await createClient();
-  const since = new Date(Date.now() - days * 86_400_000).toISOString();
+  const since = new Date(Date.now() - (days + offsetDays) * 86_400_000).toISOString();
+  const until = offsetDays > 0 ? new Date(Date.now() - offsetDays * 86_400_000).toISOString() : null;
 
   let query = supabase.from("tasks").select("status", { count: "exact" }).gte("created_at", since);
+  if (until) query = query.lt("created_at", until);
   if (departmentId) {
     const taskIds = await getDepartmentTaskIds(supabase, departmentId);
     if (taskIds.length === 0) return { completed: 0, total: 0, percent: 0 };
@@ -45,6 +50,82 @@ export async function getCompletionRate(days: number, departmentId?: string): Pr
   const total = data?.length ?? 0;
   const completed = data?.filter((t) => t.status === "done").length ?? 0;
   return { completed, total, percent: total === 0 ? 0 : Math.round((completed / total) * 100) };
+}
+
+// Percentage-point delta vs. the previous period — null (rather than a
+// misleading number) when the previous period had no tasks to compare
+// against at all.
+export function completionRateTrend(current: CompletionRate, previous: CompletionRate): number | null {
+  if (previous.total === 0) return null;
+  return current.percent - previous.percent;
+}
+
+// No date filter at all — the lifetime record, not a rolling window.
+export async function getAllTimeCompletion(departmentId?: string): Promise<CompletionRate> {
+  const supabase = await createClient();
+  let query = supabase.from("tasks").select("status", { count: "exact" });
+  if (departmentId) {
+    const taskIds = await getDepartmentTaskIds(supabase, departmentId);
+    if (taskIds.length === 0) return { completed: 0, total: 0, percent: 0 };
+    query = query.in("id", taskIds);
+  }
+
+  const { data } = await query;
+  const total = data?.length ?? 0;
+  const completed = data?.filter((t) => t.status === "done").length ?? 0;
+  return { completed, total, percent: total === 0 ? 0 : Math.round((completed / total) * 100) };
+}
+
+const STATUS_ORDER: TaskStatus[] = ["to_do", "in_progress", "pending_approval", "blocked", "done", "cancelled"];
+
+// Snapshot of every task that currently exists, grouped by status —
+// company-wide composition, not scoped to any time window.
+export async function getTaskStatusBreakdown(departmentId?: string): Promise<Record<TaskStatus, number>> {
+  const supabase = await createClient();
+  const counts = Object.fromEntries(STATUS_ORDER.map((s) => [s, 0])) as Record<TaskStatus, number>;
+
+  let query = supabase.from("tasks").select("status");
+  if (departmentId) {
+    const taskIds = await getDepartmentTaskIds(supabase, departmentId);
+    if (taskIds.length === 0) return counts;
+    query = query.in("id", taskIds);
+  }
+
+  const { data } = await query;
+  for (const t of data ?? []) {
+    const status = t.status as TaskStatus;
+    if (status in counts) counts[status] += 1;
+  }
+  return counts;
+}
+
+export interface DepartmentCompletionSummary {
+  name: string;
+  percent: number;
+}
+
+// Best/worst completion rate this period among departments that actually
+// had tasks in it — departments with zero tasks are excluded rather than
+// counted as 0%, since that would just surface "nobody assigned this
+// department anything" as if it were poor performance.
+export async function getDepartmentCompletionExtremes(
+  days: number,
+  departments: Department[]
+): Promise<{ best: DepartmentCompletionSummary | null; worst: DepartmentCompletionSummary | null }> {
+  const fullAccountDepts = departments.filter((d) => d.has_account);
+  const results = await Promise.all(
+    fullAccountDepts.map(async (d) => ({ name: d.name, rate: await getCompletionRate(days, d.id) }))
+  );
+  const withTasks = results.filter((r) => r.rate.total > 0);
+  if (withTasks.length === 0) return { best: null, worst: null };
+
+  const sorted = [...withTasks].sort((a, b) => b.rate.percent - a.rate.percent);
+  const best = sorted[0];
+  const worst = sorted[sorted.length - 1];
+  return {
+    best: { name: best.name, percent: best.rate.percent },
+    worst: best === worst ? null : { name: worst.name, percent: worst.rate.percent },
+  };
 }
 
 export interface CompletedTask {
