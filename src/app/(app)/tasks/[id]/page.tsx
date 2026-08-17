@@ -2,12 +2,13 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getTaskDetail } from "@/lib/queries";
 import { getCurrentProfile } from "@/lib/get-current-profile";
+import { createServiceRoleClient } from "@/lib/supabase/service-role";
 import { TaskStatusBadge } from "@/components/tasks/task-status-badge";
 import { RelayChain } from "@/components/tasks/relay-chain";
 import { CopyForViberButton } from "@/components/tasks/copy-for-viber-button";
 import { CommentsSection } from "@/components/tasks/comments-section";
 import { DeleteTaskButton } from "@/components/tasks/delete-task-button";
-import { Card, CardTitle } from "@/components/ui/card";
+import { Card, CardTitle, EmptyState } from "@/components/ui/card";
 import { PersonLabel } from "@/components/ui/person-label";
 import { cancelTask } from "@/app/(app)/tasks/[id]/actions";
 
@@ -22,7 +23,30 @@ export default async function TaskDetailPage({
   const { attachmentError } = await searchParams;
   const [detail, current] = await Promise.all([getTaskDetail(id), getCurrentProfile()]);
 
-  if (!detail || !current) notFound();
+  if (!current) notFound();
+
+  if (!detail) {
+    // RLS returns no row either way for "this task doesn't exist" and
+    // "it exists but you're not authorized to see it" — a shared link
+    // (CopyForViberButton) landing on the second case shouldn't look like
+    // a broken/dead link, so a service-role existence check distinguishes
+    // them here and gives a real explanation instead of a bare 404.
+    const serviceRole = createServiceRoleClient();
+    const { data: exists } = await serviceRole.from("tasks").select("id").eq("id", id).maybeSingle();
+    if (!exists) notFound();
+
+    return (
+      <EmptyState>
+        <p>You don&apos;t have access to this task.</p>
+        <p className="text-xs text-zinc-400">
+          Ask the task creator or your supervisor to add you if you think this is a mistake.
+        </p>
+        <Link href="/tasks" className="text-zinc-900 underline dark:text-zinc-50">
+          Back to tasks
+        </Link>
+      </EmptyState>
+    );
+  }
 
   const { task, assignees, visibility, attachments, comments, auditLog } = detail;
   const { profile } = current;

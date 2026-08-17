@@ -1,10 +1,25 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { GOOGLE_WORKSPACE_DOMAIN } from "@/lib/constants";
 
 export default function LoginPage() {
+  // useSearchParams needs a Suspense boundary — the middleware sets ?next=
+  // on the redirect to here (see supabase/middleware.ts) so a shared task
+  // link that hits someone while logged out lands back on the task after
+  // signing in, instead of always dropping them on /dashboard.
+  return (
+    <Suspense>
+      <LoginForm />
+    </Suspense>
+  );
+}
+
+function LoginForm() {
+  const searchParams = useSearchParams();
+  const next = searchParams.get("next") || "/dashboard";
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -17,7 +32,7 @@ export default function LoginPage() {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: `${siteUrl}/auth/callback`,
+        redirectTo: `${siteUrl}/auth/callback?next=${encodeURIComponent(next)}`,
         // Hints Google's account chooser to the Workspace domain. This is a
         // UX nicety only — the real enforcement happens server-side in
         // /auth/callback, since the hd param can be bypassed client-side.
