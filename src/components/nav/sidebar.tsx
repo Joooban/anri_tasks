@@ -40,7 +40,7 @@ export function Sidebar({
   const pathname = usePathname();
 
   return (
-    <nav className="flex h-full w-60 shrink-0 flex-col border-r border-zinc-200 bg-white px-3 py-4 dark:border-zinc-800 dark:bg-zinc-950">
+    <nav className="flex h-full w-52 shrink-0 flex-col border-r border-zinc-200 bg-white px-3 py-4 dark:border-zinc-800 dark:bg-zinc-950">
       <div className="mb-6 px-3">
         <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">ANRI Tasks</p>
         {departmentName && (

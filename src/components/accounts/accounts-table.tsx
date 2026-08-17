@@ -223,11 +223,11 @@ export function AccountsTable({
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-zinc-200 bg-zinc-50 text-left text-xs text-zinc-500 dark:border-zinc-800 dark:bg-zinc-900/50 dark:text-zinc-400">
-              <th className="px-4 py-2 font-medium">Name / email</th>
-              <th className="px-4 py-2 font-medium">Role</th>
-              <th className="px-4 py-2 font-medium">Department</th>
-              <th className="px-4 py-2 font-medium">Birthday</th>
-              <th className="px-4 py-2 font-medium"></th>
+              <th className="px-3 py-2 font-medium">Name / email</th>
+              <th className="px-3 py-2 font-medium">Role</th>
+              <th className="px-3 py-2 font-medium">Department</th>
+              <th className="px-3 py-2 font-medium">Birthday</th>
+              <th className="px-3 py-2 font-medium"></th>
             </tr>
           </thead>
           <tbody>
@@ -237,7 +237,7 @@ export function AccountsTable({
               return (
                 <Fragment key={p.id}>
                   <tr className="border-b border-zinc-100 last:border-0 dark:border-zinc-800">
-                    <td className="px-4 py-2">
+                    <td className="px-3 py-2">
                       <p className="font-medium text-zinc-900 dark:text-zinc-50">
                         {p.full_name || "—"}
                         {p.deactivated_at && (
@@ -251,11 +251,11 @@ export function AccountsTable({
                         {p.id === myProfileId && " (you)"}
                       </p>
                     </td>
-                    <td className="px-4 py-2">
+                    <td className="px-3 py-2">
                       <select
                         value={row.role}
                         onChange={(e) => update(p.id, { role: e.target.value as Role })}
-                        className="rounded-md border border-zinc-300 bg-white px-2 py-1 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+                        className="w-28 rounded-md border border-zinc-300 bg-white px-2 py-1 text-sm dark:border-zinc-700 dark:bg-zinc-900"
                       >
                         {ROLES.map((r) => (
                           <option key={r} value={r}>
@@ -264,11 +264,11 @@ export function AccountsTable({
                         ))}
                       </select>
                     </td>
-                    <td className="px-4 py-2">
+                    <td className="px-3 py-2">
                       <select
                         value={row.departmentId ?? ""}
                         onChange={(e) => update(p.id, { departmentId: e.target.value || null })}
-                        className="min-w-[10rem] rounded-md border border-zinc-300 bg-white px-2 py-1 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+                        className="w-36 rounded-md border border-zinc-300 bg-white px-2 py-1 text-sm dark:border-zinc-700 dark:bg-zinc-900"
                       >
                         <option value="">None</option>
                         {departments.map((d) => (
@@ -278,7 +278,7 @@ export function AccountsTable({
                         ))}
                       </select>
                     </td>
-                    <td className="px-4 py-2">
+                    <td className="px-3 py-2">
                       <div className="flex items-center gap-1">
                         <select
                           aria-label="Birthday month"
@@ -286,7 +286,7 @@ export function AccountsTable({
                           onChange={(e) =>
                             update(p.id, { birthdayMonth: e.target.value ? Number(e.target.value) : null })
                           }
-                          className="rounded-md border border-zinc-300 bg-white px-1.5 py-1 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+                          className="w-16 rounded-md border border-zinc-300 bg-white px-1.5 py-1 text-sm dark:border-zinc-700 dark:bg-zinc-900"
                         >
                           <option value="">—</option>
                           {MONTHS.map((m, i) => (
@@ -306,7 +306,7 @@ export function AccountsTable({
                         />
                       </div>
                     </td>
-                    <td className="px-4 py-2 text-right">
+                    <td className="px-3 py-2 text-right">
                       <button
                         disabled={!dirty || pending}
                         onClick={() => save(p.id)}
