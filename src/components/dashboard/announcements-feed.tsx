@@ -55,7 +55,7 @@ function EditAnnouncementForm({ item, onDone }: { item: AnnouncementItem; onDone
         <LocalDateTimeField
           id={`expires_at-${item.id}`}
           name="expires_at"
-          label="Expires at (leave blank to never expire)"
+          label="Expires at (leave blank to expire 24h after publish)"
           defaultValueIso={item.expires_at}
           className="rounded-md border border-zinc-300 bg-white px-2 py-1.5 text-xs dark:border-zinc-700 dark:bg-zinc-900"
         />
@@ -81,6 +81,39 @@ function EditAnnouncementForm({ item, onDone }: { item: AnnouncementItem; onDone
   );
 }
 
+function AnnouncementView({ item }: { item: AnnouncementItem }) {
+  return (
+    <>
+      <div className="flex items-center gap-2">
+        {item.pinned && (
+          <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[0.65rem] font-semibold uppercase tracking-wide text-amber-700 dark:bg-amber-950 dark:text-amber-400">
+            Pinned
+          </span>
+        )}
+        <p className="text-sm font-medium text-zinc-900 dark:text-zinc-50">{item.title}</p>
+      </div>
+      <p className="mt-0.5 text-sm text-zinc-600 dark:text-zinc-400">{item.body}</p>
+      <p className="mt-1 text-xs text-zinc-400">
+        {item.department?.name ?? "Company-wide"} · {item.author?.full_name ?? item.author?.email} ·{" "}
+        {new Date(item.publish_at).toLocaleString(undefined, {
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+          hour: "numeric",
+          minute: "2-digit",
+        })}
+        {item.expires_at &&
+          ` · Expires ${new Date(item.expires_at).toLocaleString(undefined, {
+            month: "short",
+            day: "numeric",
+            hour: "numeric",
+            minute: "2-digit",
+          })}`}
+      </p>
+    </>
+  );
+}
+
 export function AnnouncementsFeed({
   items,
   currentUserId,
@@ -92,7 +125,16 @@ export function AnnouncementsFeed({
 }) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deletingId, startDelete] = useTransition();
+  const [index, setIndex] = useState(0);
   const router = useRouter();
+
+  // items can shrink (e.g. after a delete) — clamp rather than let index
+  // point past the end.
+  const current = items.length === 0 ? null : items[Math.min(index, items.length - 1)];
+
+  function go(delta: number) {
+    setIndex((i) => (items.length === 0 ? 0 : (i + delta + items.length) % items.length));
+  }
 
   function handleDelete(id: string) {
     if (!window.confirm("Delete this announcement? This can't be undone.")) return;
@@ -108,39 +150,54 @@ export function AnnouncementsFeed({
 
   return (
     <Card>
-      <CardTitle className="mb-3">Announcements</CardTitle>
-      {items.length === 0 ? (
+      <div className="mb-3 flex items-center justify-between">
+        <CardTitle>Announcements</CardTitle>
+        {items.length > 1 && (
+          <div className="flex items-center gap-1.5 text-xs text-zinc-500 dark:text-zinc-400">
+            <button
+              onClick={() => go(-1)}
+              aria-label="Previous announcement"
+              className="rounded px-1.5 py-0.5 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+            >
+              ‹
+            </button>
+            <span>
+              {Math.min(index, items.length - 1) + 1}/{items.length}
+            </span>
+            <button
+              onClick={() => go(1)}
+              aria-label="Next announcement"
+              className="rounded px-1.5 py-0.5 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+            >
+              ›
+            </button>
+          </div>
+        )}
+      </div>
+
+      {!current ? (
         <p className="text-sm text-zinc-500 dark:text-zinc-400">No announcements yet.</p>
       ) : (
-        <ul className="flex flex-col gap-3">
-          {items.map((item) => {
-            const canEdit = currentUserId != null && item.author_id === currentUserId;
+        <>
+          {(() => {
+            const canEdit = currentUserId != null && current.author_id === currentUserId;
             const canDelete = canEdit || canModerate;
 
-            if (editingId === item.id) {
-              return (
-                <li key={item.id} className="border-b border-zinc-100 pb-3 last:border-0 last:pb-0 dark:border-zinc-800">
-                  <EditAnnouncementForm item={item} onDone={() => setEditingId(null)} />
-                </li>
-              );
+            if (editingId === current.id) {
+              return <EditAnnouncementForm item={current} onDone={() => setEditingId(null)} />;
             }
 
             return (
-              <li key={item.id} className="border-b border-zinc-100 pb-3 last:border-0 last:pb-0 dark:border-zinc-800">
+              <div key={current.id} className="motion-safe:animate-[announcement-slide-in_180ms_ease-out]">
                 <div className="flex items-start justify-between gap-2">
-                  <div className="flex items-center gap-2">
-                    {item.pinned && (
-                      <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[0.65rem] font-semibold uppercase tracking-wide text-amber-700 dark:bg-amber-950 dark:text-amber-400">
-                        Pinned
-                      </span>
-                    )}
-                    <p className="text-sm font-medium text-zinc-900 dark:text-zinc-50">{item.title}</p>
+                  <div className="min-w-0 flex-1">
+                    <AnnouncementView item={current} />
                   </div>
                   {(canEdit || canDelete) && (
                     <div className="flex shrink-0 items-center gap-2 text-xs">
                       {canEdit && (
                         <button
-                          onClick={() => setEditingId(item.id)}
+                          onClick={() => setEditingId(current.id)}
                           className="font-medium text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-50"
                         >
                           Edit
@@ -148,7 +205,7 @@ export function AnnouncementsFeed({
                       )}
                       {canDelete && (
                         <button
-                          onClick={() => handleDelete(item.id)}
+                          onClick={() => handleDelete(current.id)}
                           disabled={deletingId}
                           className="font-medium text-red-500 hover:text-red-700 disabled:opacity-60 dark:text-red-400 dark:hover:text-red-300"
                         >
@@ -158,28 +215,27 @@ export function AnnouncementsFeed({
                     </div>
                   )}
                 </div>
-                <p className="mt-0.5 text-sm text-zinc-600 dark:text-zinc-400">{item.body}</p>
-                <p className="mt-1 text-xs text-zinc-400">
-                  {item.department?.name ?? "Company-wide"} · {item.author?.full_name ?? item.author?.email} ·{" "}
-                  {new Date(item.publish_at).toLocaleString(undefined, {
-                    month: "short",
-                    day: "numeric",
-                    year: "numeric",
-                    hour: "numeric",
-                    minute: "2-digit",
-                  })}
-                  {item.expires_at &&
-                    ` · Expires ${new Date(item.expires_at).toLocaleString(undefined, {
-                      month: "short",
-                      day: "numeric",
-                      hour: "numeric",
-                      minute: "2-digit",
-                    })}`}
-                </p>
-              </li>
+              </div>
             );
-          })}
-        </ul>
+          })()}
+
+          {items.length > 1 && (
+            <div className="mt-3 flex justify-center gap-1.5">
+              {items.map((item, i) => (
+                <button
+                  key={item.id}
+                  onClick={() => setIndex(i)}
+                  aria-label={`Show announcement ${i + 1}`}
+                  className={`h-1.5 w-1.5 rounded-full ${
+                    i === Math.min(index, items.length - 1)
+                      ? "bg-zinc-900 dark:bg-zinc-100"
+                      : "bg-zinc-300 dark:bg-zinc-700"
+                  }`}
+                />
+              ))}
+            </div>
+          )}
+        </>
       )}
     </Card>
   );

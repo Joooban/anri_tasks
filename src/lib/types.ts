@@ -63,6 +63,8 @@ export interface Profile {
   role: Role;
   department_id: string | null;
   avatar_url: string | null;
+  birthday_month: number | null;
+  birthday_day: number | null;
   created_at: string;
 }
 
@@ -161,9 +163,7 @@ export interface TaskComment {
 
 export const BOSS_DASHBOARD_WIDGETS = [
   "completion_rate",
-  "department_health",
-  "overdue_blocked",
-  "upcoming_deadlines",
+  "needs_attention",
   "announcements",
   "department_tiles",
 ] as const;
@@ -172,9 +172,7 @@ export type BossDashboardWidget = (typeof BOSS_DASHBOARD_WIDGETS)[number];
 
 export const BOSS_DASHBOARD_WIDGET_LABELS: Record<BossDashboardWidget, string> = {
   completion_rate: "Company-wide Completion Rate",
-  department_health: "Department Health (Red/Yellow/Green)",
-  overdue_blocked: "Overdue & Blocked Tasks",
-  upcoming_deadlines: "Upcoming Deadlines (7-14 days)",
+  needs_attention: "Needs Attention (Overdue, Blocked & Due Soon)",
   announcements: "Company Announcements",
   department_tiles: "Department Drill-down Tiles",
 };

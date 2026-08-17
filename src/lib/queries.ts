@@ -12,7 +12,7 @@ const TASK_LIST_SELECT = `
 
 export async function getTaskList(options?: {
   status?: string;
-  departmentId?: string;
+  departmentId?: string | null;
 }): Promise<TaskListItem[]> {
   const supabase = await createClient();
   let query = supabase

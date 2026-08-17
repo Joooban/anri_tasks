@@ -6,13 +6,11 @@ import { getDepartments, getFullAccountDepartments } from "@/lib/queries";
 import {
   getCompletionRate,
   getDepartmentHealthGrid,
-  getOverdueAndBlockedTasks,
-  getUpcomingDeadlines,
+  getNeedsAttentionTasks,
   getAnnouncements,
 } from "@/lib/dashboard-queries";
 import { createClient } from "@/lib/supabase/server";
 import { CompletionRateCard } from "@/components/dashboard/completion-rate-card";
-import { DepartmentHealthGrid } from "@/components/dashboard/department-health-grid";
 import { DepartmentTiles } from "@/components/dashboard/department-tiles";
 import { TaskMiniList } from "@/components/dashboard/task-mini-list";
 import { AnnouncementsFeed } from "@/components/dashboard/announcements-feed";
@@ -41,12 +39,12 @@ export default async function DashboardPage() {
 
   if (profile.role === "boss_boss" || profile.role === "supervisor") {
     const departments = await getFullAccountDepartments();
-    const [week, month, health, overdueBlocked, upcoming, announcements] = await Promise.all([
+    const [today, week, month, health, needsAttention, announcements] = await Promise.all([
+      getCompletionRate(1),
       getCompletionRate(7),
       getCompletionRate(30),
       getDepartmentHealthGrid(departments),
-      getOverdueAndBlockedTasks(),
-      getUpcomingDeadlines(14),
+      getNeedsAttentionTasks(),
       getAnnouncements(),
     ]);
 
@@ -71,27 +69,22 @@ export default async function DashboardPage() {
     }
 
     const widgetMap: Record<BossDashboardWidget, ReactNode> = {
-      completion_rate: <CompletionRateCard week={week} month={month} />,
-      department_health: <DepartmentHealthGrid items={health} />,
-      overdue_blocked: (
+      completion_rate: <CompletionRateCard today={today} week={week} month={month} />,
+      needs_attention: (
         <TaskMiniList
-          title="Overdue & blocked"
-          emptyLabel="Nothing overdue or blocked."
-          items={overdueBlocked.map((t) => ({
+          title="Needs attention"
+          emptyLabel="Nothing overdue, blocked, or due soon."
+          items={needsAttention.map((t) => ({
             id: t.id,
             title: t.title,
-            meta: t.status === "blocked" ? "Blocked" : t.creator_department?.name ?? "",
-          }))}
-        />
-      ),
-      upcoming_deadlines: (
-        <TaskMiniList
-          title="Upcoming deadlines (14 days)"
-          emptyLabel="No deadlines in the next two weeks."
-          items={upcoming.map((t) => ({
-            id: t.id,
-            title: t.title,
-            meta: new Date(t.deadline).toLocaleDateString(undefined, { month: "short", day: "numeric" }),
+            meta:
+              t.reason === "overdue"
+                ? "Overdue"
+                : t.reason === "blocked"
+                  ? "Blocked"
+                  : t.deadline
+                    ? `Due ${new Date(t.deadline).toLocaleDateString(undefined, { month: "short", day: "numeric" })}`
+                    : "",
           }))}
         />
       ),
@@ -111,23 +104,12 @@ export default async function DashboardPage() {
         </div>
         <div className="grid gap-4 lg:grid-cols-2">
           {widgetOrder.filter((w) => enabledWidgets.includes(w)).map((w) => (
-            // department_health and department_tiles both need room to list
-            // every department (this company has 14, with genuinely long
-            // names) — forcing either into a 50/50 split next to a small
-            // stat card never looks balanced, so both always take the full
-            // row. completion_rate spans too so it isn't left half-width
-            // with empty space next to it now that it has no neighbor.
-            <div
-              key={w}
-              className={
-                w === "department_tiles" ||
-                w === "overdue_blocked" ||
-                w === "department_health" ||
-                w === "completion_rate"
-                  ? "lg:col-span-2"
-                  : ""
-              }
-            >
+            // department_tiles needs room to list every department (this
+            // company has 14, with genuinely long names) — forcing it into
+            // a 50/50 split next to a small stat card never looks balanced,
+            // so it always takes the full row. Everything else pairs up
+            // normally at half-width.
+            <div key={w} className={w === "department_tiles" ? "lg:col-span-2" : ""}>
               {widgetMap[w]}
             </div>
           ))}

@@ -61,7 +61,7 @@ export function PostAnnouncementForm({ canPostCompanyWide }: { canPostCompanyWid
         <LocalDateTimeField
           id="expires_at"
           name="expires_at"
-          label="Expires at (optional — leave blank to never expire)"
+          label="Expires at (optional — leave blank to expire 24h after publish)"
           className="rounded-md border border-zinc-300 bg-white px-2 py-1.5 text-xs dark:border-zinc-700 dark:bg-zinc-900"
         />
       </div>

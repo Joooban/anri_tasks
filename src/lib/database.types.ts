@@ -251,9 +251,43 @@ export type Database = {
           },
         ]
       }
+      document_templates: {
+        Row: {
+          created_at: string
+          file_name: string
+          id: string
+          storage_path: string
+          uploaded_by: string
+        }
+        Insert: {
+          created_at?: string
+          file_name: string
+          id?: string
+          storage_path: string
+          uploaded_by: string
+        }
+        Update: {
+          created_at?: string
+          file_name?: string
+          id?: string
+          storage_path?: string
+          uploaded_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_templates_uploaded_by_fkey"
+            columns: ["uploaded_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
+          birthday_day: number | null
+          birthday_month: number | null
           created_at: string
           department_id: string | null
           email: string
@@ -263,6 +297,8 @@ export type Database = {
         }
         Insert: {
           avatar_url?: string | null
+          birthday_day?: number | null
+          birthday_month?: number | null
           created_at?: string
           department_id?: string | null
           email: string
@@ -272,6 +308,8 @@ export type Database = {
         }
         Update: {
           avatar_url?: string | null
+          birthday_day?: number | null
+          birthday_month?: number | null
           created_at?: string
           department_id?: string | null
           email?: string

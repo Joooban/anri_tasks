@@ -5,10 +5,15 @@ import { updateAccount } from "@/app/(app)/accounts/actions";
 import { ROLE_LABELS, type Profile, type Department, type Role } from "@/lib/types";
 
 const ROLES: Role[] = ["boss_boss", "supervisor", "department", "employee"];
+const MONTHS = [
+  "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+];
 
 interface Row {
   role: Role;
   departmentId: string | null;
+  birthdayMonth: number | null;
+  birthdayDay: number | null;
 }
 
 export function AccountsTable({
@@ -21,7 +26,12 @@ export function AccountsTable({
   myProfileId: string;
 }) {
   const [rows, setRows] = useState<Record<string, Row>>(() =>
-    Object.fromEntries(profiles.map((p) => [p.id, { role: p.role, departmentId: p.department_id }]))
+    Object.fromEntries(
+      profiles.map((p) => [
+        p.id,
+        { role: p.role, departmentId: p.department_id, birthdayMonth: p.birthday_month, birthdayDay: p.birthday_day },
+      ])
+    )
   );
   const [savingId, setSavingId] = useState<string | null>(null);
   const [savedId, setSavedId] = useState<string | null>(null);
@@ -33,12 +43,21 @@ export function AccountsTable({
     setSavedId(null);
   }
 
+  function isDirty(p: Profile, row: Row) {
+    return (
+      row.role !== p.role ||
+      row.departmentId !== p.department_id ||
+      row.birthdayMonth !== p.birthday_month ||
+      row.birthdayDay !== p.birthday_day
+    );
+  }
+
   function save(id: string) {
     const row = rows[id];
     setSavingId(id);
     setErrorId(null);
     startTransition(async () => {
-      const res = await updateAccount(id, row.role, row.departmentId);
+      const res = await updateAccount(id, row.role, row.departmentId, row.birthdayMonth, row.birthdayDay);
       setSavingId(null);
       if (res.error) {
         setErrorId({ id, message: res.error });
@@ -61,13 +80,14 @@ export function AccountsTable({
               <th className="px-4 py-2 font-medium">Name / email</th>
               <th className="px-4 py-2 font-medium">Role</th>
               <th className="px-4 py-2 font-medium">Department</th>
+              <th className="px-4 py-2 font-medium">Birthday</th>
               <th className="px-4 py-2 font-medium"></th>
             </tr>
           </thead>
           <tbody>
             {profiles.map((p) => {
               const row = rows[p.id];
-              const dirty = row.role !== p.role || row.departmentId !== p.department_id;
+              const dirty = isDirty(p, row);
               return (
                 <tr key={p.id} className="border-b border-zinc-100 last:border-0 dark:border-zinc-800">
                   <td className="px-4 py-2">
@@ -104,6 +124,34 @@ export function AccountsTable({
                       ))}
                     </select>
                   </td>
+                  <td className="px-4 py-2">
+                    <div className="flex items-center gap-1">
+                      <select
+                        aria-label="Birthday month"
+                        value={row.birthdayMonth ?? ""}
+                        onChange={(e) =>
+                          update(p.id, { birthdayMonth: e.target.value ? Number(e.target.value) : null })
+                        }
+                        className="rounded-md border border-zinc-300 bg-white px-1.5 py-1 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+                      >
+                        <option value="">—</option>
+                        {MONTHS.map((m, i) => (
+                          <option key={m} value={i + 1}>
+                            {m}
+                          </option>
+                        ))}
+                      </select>
+                      <input
+                        aria-label="Birthday day"
+                        type="number"
+                        min={1}
+                        max={31}
+                        value={row.birthdayDay ?? ""}
+                        onChange={(e) => update(p.id, { birthdayDay: e.target.value ? Number(e.target.value) : null })}
+                        className="w-14 rounded-md border border-zinc-300 bg-white px-1.5 py-1 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+                      />
+                    </div>
+                  </td>
                   <td className="px-4 py-2 text-right">
                     <button
                       disabled={!dirty || pending}
@@ -126,7 +174,7 @@ export function AccountsTable({
       <div className="flex flex-col gap-3 md:hidden">
         {profiles.map((p) => {
           const row = rows[p.id];
-          const dirty = row.role !== p.role || row.departmentId !== p.department_id;
+          const dirty = isDirty(p, row);
           return (
             <div
               key={p.id}
@@ -175,6 +223,34 @@ export function AccountsTable({
                     </option>
                   ))}
                 </select>
+              </div>
+
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-medium text-zinc-500 dark:text-zinc-400">Birthday</label>
+                <div className="flex items-center gap-1.5">
+                  <select
+                    aria-label="Birthday month"
+                    value={row.birthdayMonth ?? ""}
+                    onChange={(e) => update(p.id, { birthdayMonth: e.target.value ? Number(e.target.value) : null })}
+                    className="flex-1 rounded-md border border-zinc-300 bg-white px-2 py-1.5 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+                  >
+                    <option value="">—</option>
+                    {MONTHS.map((m, i) => (
+                      <option key={m} value={i + 1}>
+                        {m}
+                      </option>
+                    ))}
+                  </select>
+                  <input
+                    aria-label="Birthday day"
+                    type="number"
+                    min={1}
+                    max={31}
+                    value={row.birthdayDay ?? ""}
+                    onChange={(e) => update(p.id, { birthdayDay: e.target.value ? Number(e.target.value) : null })}
+                    className="w-16 rounded-md border border-zinc-300 bg-white px-2 py-1.5 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+                  />
+                </div>
               </div>
 
               <div className="flex items-center gap-2">

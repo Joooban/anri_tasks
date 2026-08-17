@@ -1,7 +1,6 @@
 import {
   getCompletionRate,
-  getOverdueAndBlockedTasks,
-  getUpcomingDeadlines,
+  getNeedsAttentionTasks,
   getAnnouncements,
   getRecentlyCompleted,
 } from "@/lib/dashboard-queries";
@@ -27,11 +26,11 @@ export async function DepartmentDashboard({
     );
   }
 
-  const [week, month, overdueBlocked, upcoming, announcements, completed, current] = await Promise.all([
+  const [today, week, month, needsAttention, announcements, completed, current] = await Promise.all([
+    getCompletionRate(1, departmentId),
     getCompletionRate(7, departmentId),
     getCompletionRate(30, departmentId),
-    getOverdueAndBlockedTasks(departmentId),
-    getUpcomingDeadlines(14, departmentId),
+    getNeedsAttentionTasks(14, departmentId),
     getAnnouncements(departmentId),
     getRecentlyCompleted(8, departmentId),
     getCurrentProfile(),
@@ -57,7 +56,7 @@ export async function DepartmentDashboard({
         {departmentName ?? "Department"} Dashboard
       </h1>
       <div className="grid gap-4 lg:grid-cols-2">
-        <CompletionRateCard week={week} month={month} />
+        <CompletionRateCard today={today} week={week} month={month} />
 
         <Card>
           <CardTitle className="mb-3">Upcoming meetings</CardTitle>
@@ -88,22 +87,19 @@ export async function DepartmentDashboard({
         </Card>
 
         <TaskMiniList
-          title="Overdue & blocked"
-          emptyLabel="Nothing overdue or blocked."
-          items={overdueBlocked.map((t) => ({
+          title="Needs attention"
+          emptyLabel="Nothing overdue, blocked, or due soon."
+          items={needsAttention.map((t) => ({
             id: t.id,
             title: t.title,
-            meta: t.status === "blocked" ? "Blocked" : "Overdue",
-          }))}
-        />
-
-        <TaskMiniList
-          title="Upcoming deadlines (14 days)"
-          emptyLabel="No deadlines in the next two weeks."
-          items={upcoming.map((t) => ({
-            id: t.id,
-            title: t.title,
-            meta: new Date(t.deadline).toLocaleDateString(undefined, { month: "short", day: "numeric" }),
+            meta:
+              t.reason === "overdue"
+                ? "Overdue"
+                : t.reason === "blocked"
+                  ? "Blocked"
+                  : t.deadline
+                    ? `Due ${new Date(t.deadline).toLocaleDateString(undefined, { month: "short", day: "numeric" })}`
+                    : "",
           }))}
         />
 

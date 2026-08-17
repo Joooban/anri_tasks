@@ -46,13 +46,18 @@ export async function postAnnouncement(
     return { error: "The expiry time has to be after the publish time." };
   }
 
+  // Default expiry: 24 hours after publish, unless a custom one was set —
+  // announcements no longer linger indefinitely by default.
+  const expiresAt =
+    expiresAtRaw ?? new Date((publishAtRaw ? new Date(publishAtRaw) : new Date()).getTime() + 24 * 60 * 60 * 1000).toISOString();
+
   const { data: announcementId, error } = await supabase.rpc("create_announcement_rpc", {
     p_title: encrypt(title),
     p_body: encrypt(body),
     p_pinned: pinned,
     p_company_wide: companyWide,
     p_publish_at: nullableRpcArg(publishAtRaw),
-    p_expires_at: nullableRpcArg(expiresAtRaw),
+    p_expires_at: expiresAt,
   });
 
   if (error || !announcementId) return { error: friendlyError(error, "We couldn't post the announcement") };
@@ -79,13 +84,18 @@ export async function updateAnnouncement(
     return { error: "The expiry time has to be after the publish time." };
   }
 
+  // Same 24h-unless-custom default as creation, so editing can't silently
+  // turn an announcement into one that never expires.
+  const expiresAt =
+    expiresAtRaw ?? new Date((publishAtRaw ? new Date(publishAtRaw) : new Date()).getTime() + 24 * 60 * 60 * 1000).toISOString();
+
   const { error } = await supabase.rpc("update_announcement_rpc", {
     p_id: id,
     p_title: encrypt(title),
     p_body: encrypt(body),
     p_pinned: pinned,
     p_publish_at: nullableRpcArg(publishAtRaw),
-    p_expires_at: nullableRpcArg(expiresAtRaw),
+    p_expires_at: expiresAt,
   });
 
   if (error) return { error: friendlyError(error, "We couldn't update the announcement") };

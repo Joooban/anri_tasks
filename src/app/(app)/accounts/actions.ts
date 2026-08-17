@@ -8,7 +8,13 @@ import type { Role } from "@/lib/types";
 // RLS (profiles_admin_write in 0003_rls.sql) already restricts this update
 // to boss_boss/supervisor callers — this check is a friendlier first line
 // of defense so a non-admin gets a clear message instead of a DB error.
-export async function updateAccount(profileId: string, role: Role, departmentId: string | null) {
+export async function updateAccount(
+  profileId: string,
+  role: Role,
+  departmentId: string | null,
+  birthdayMonth: number | null,
+  birthdayDay: number | null
+) {
   const supabase = await createClient();
   const {
     data: { user },
@@ -22,10 +28,11 @@ export async function updateAccount(profileId: string, role: Role, departmentId:
 
   const { error } = await supabase
     .from("profiles")
-    .update({ role, department_id: departmentId })
+    .update({ role, department_id: departmentId, birthday_month: birthdayMonth, birthday_day: birthdayDay })
     .eq("id", profileId);
 
   if (error) return { error: friendlyError(error, "We couldn't update that account") };
   revalidatePath("/accounts");
+  revalidatePath("/departments");
   return { error: null };
 }

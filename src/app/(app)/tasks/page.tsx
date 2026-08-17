@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getTaskList } from "@/lib/queries";
+import { getTaskList, getFullAccountDepartments } from "@/lib/queries";
 import { getCurrentProfile } from "@/lib/get-current-profile";
 import { getPreview } from "@/lib/get-preview";
 import { TaskCard } from "@/components/tasks/task-card";
@@ -20,23 +20,24 @@ const STATUS_FILTERS: (TaskStatus | "all")[] = [
 export default async function TasksPage({
   searchParams,
 }: {
-  searchParams: Promise<{ status?: string }>;
+  searchParams: Promise<{ status?: string; department?: string }>;
 }) {
-  const { status } = await searchParams;
+  const { status, department } = await searchParams;
   const current = await getCurrentProfile();
   const preview =
     current?.profile.role === "boss_boss" || current?.profile.role === "supervisor"
       ? await getPreview()
       : null;
 
+  const departments = await getFullAccountDepartments();
+
   const tasks = await getTaskList({
     status: status && status !== "all" ? status : undefined,
-    // Boss/Supervisor see every task via RLS regardless — this app-level
-    // filter is what actually narrows the list while previewing, since RLS
-    // itself has no reason to restrict a privileged real identity. Not
-    // previewing: no filter needed, RLS already scopes real non-boss users
-    // correctly on its own.
-    departmentId: preview?.departmentId,
+    // The department filter picked from the dropdown below takes priority
+    // over the preview department — while previewing, RLS doesn't narrow
+    // anything on its own (see comment below), so without an explicit
+    // choice it falls back to the department being previewed.
+    departmentId: department || preview?.departmentId,
   });
   const canCreate = current?.profile.role !== "employee" && !preview;
 
@@ -54,21 +55,48 @@ export default async function TasksPage({
         )}
       </div>
 
-      <div className="flex flex-wrap gap-1.5">
-        {STATUS_FILTERS.map((s) => (
-          <Link
-            key={s}
-            href={s === "all" ? "/tasks" : `/tasks?status=${s}`}
-            className={clsx(
-              "rounded-full px-3 py-1 text-xs font-medium",
-              (status ?? "all") === s
-                ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900"
-                : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
-            )}
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="flex flex-wrap gap-1.5">
+          {STATUS_FILTERS.map((s) => (
+            <Link
+              key={s}
+              href={{
+                pathname: "/tasks",
+                query: { ...(s !== "all" ? { status: s } : {}), ...(department ? { department } : {}) },
+              }}
+              className={clsx(
+                "rounded-full px-3 py-1 text-xs font-medium",
+                (status ?? "all") === s
+                  ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900"
+                  : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
+              )}
+            >
+              {s === "all" ? "All" : TASK_STATUS_LABELS[s]}
+            </Link>
+          ))}
+        </div>
+
+        <form className="flex items-center gap-1.5">
+          {status && <input type="hidden" name="status" value={status} />}
+          <select
+            name="department"
+            defaultValue={department ?? ""}
+            className="h-7 rounded-md border border-zinc-300 bg-white px-2 text-xs dark:border-zinc-700 dark:bg-zinc-900"
           >
-            {s === "all" ? "All" : TASK_STATUS_LABELS[s]}
-          </Link>
-        ))}
+            <option value="">All departments</option>
+            {departments.map((d) => (
+              <option key={d.id} value={d.id}>
+                {d.name}
+              </option>
+            ))}
+          </select>
+          <button
+            type="submit"
+            className="h-7 rounded-md bg-zinc-100 px-2.5 text-xs font-medium text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
+          >
+            Filter
+          </button>
+        </form>
       </div>
 
       {tasks.length === 0 ? (

@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { createServiceRoleClient } from "@/lib/supabase/service-role";
 import { getFullAccountDepartments } from "@/lib/queries";
 import { getCurrentProfile } from "@/lib/get-current-profile";
 import { decrypt } from "@/lib/encryption";
@@ -6,6 +7,8 @@ import { HistoryItem } from "@/components/history/history-item";
 import { EmptyState } from "@/components/ui/card";
 import type { TaskStatus } from "@/lib/types";
 import Link from "next/link";
+
+const HISTORY_SELECT = "id,title,status,updated_at,deadline,created_by,creator_department_id,creator_department:departments(name)";
 
 export default async function HistoryPage({
   searchParams,
@@ -22,31 +25,59 @@ export default async function HistoryPage({
   const dateMode = dateModeParam === "deadline" ? "deadline" : "completed";
   const dateColumn = dateMode === "deadline" ? "deadline" : "updated_at";
   const supabase = await createClient();
+  const serviceRole = createServiceRoleClient();
   const [departments, current] = await Promise.all([getFullAccountDepartments(), getCurrentProfile()]);
   const canDeleteAny = current?.profile.role === "boss_boss" || current?.profile.role === "supervisor";
   const myId = current?.profile.id ?? null;
 
-  let query = supabase
-    .from("tasks")
-    .select("id,title,status,updated_at,deadline,created_by,creator_department_id,creator_department:departments(name)")
-    .in("status", ["done", "cancelled"])
-    .order("updated_at", { ascending: false })
-    .limit(100);
+  // History is a shared audit log, not scoped like the Tasks list or
+  // individual task pages — everyone sees every non-personal done/
+  // cancelled task, regardless of whether they were involved in it.
+  // "Personal" tasks (is_personal, "visible only to me and the assignee
+  // chain") are an explicit privacy choice made at creation time, so those
+  // stay scoped to can_view_task() via the regular RLS-respecting client
+  // instead — company-wide visibility here shouldn't override that.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  function applyFilters(q: any) {
+    if (department) q = q.eq("creator_department_id", department);
+    // Date-only inputs, interpreted as calendar-day bounds server-side — a
+    // few hours of timezone fuzziness at the boundary is an acceptable
+    // trade-off for a history filter (unlike task deadlines, nothing here
+    // depends on exact precision).
+    if (from) q = q.gte(dateColumn, new Date(`${from}T00:00:00`).toISOString());
+    if (to) q = q.lte(dateColumn, new Date(`${to}T23:59:59.999`).toISOString());
+    return q;
+  }
 
-  if (department) query = query.eq("creator_department_id", department);
-  // Date-only inputs, interpreted as calendar-day bounds server-side — a
-  // few hours of timezone fuzziness at the boundary is an acceptable
-  // trade-off for a history filter (unlike task deadlines, nothing here
-  // depends on exact precision).
-  if (from) query = query.gte(dateColumn, new Date(`${from}T00:00:00`).toISOString());
-  if (to) query = query.lte(dateColumn, new Date(`${to}T23:59:59.999`).toISOString());
+  const [{ data: companyRows }, { data: personalRows }] = await Promise.all([
+    applyFilters(
+      serviceRole
+        .from("tasks")
+        .select(HISTORY_SELECT)
+        .in("status", ["done", "cancelled"])
+        .eq("is_personal", false)
+        .order(dateColumn, { ascending: false })
+        .limit(100)
+    ),
+    applyFilters(
+      supabase
+        .from("tasks")
+        .select(HISTORY_SELECT)
+        .in("status", ["done", "cancelled"])
+        .eq("is_personal", true)
+        .order(dateColumn, { ascending: false })
+        .limit(100)
+    ),
+  ]);
 
-  const { data: rawTasks } = await query;
-  const tasks = (rawTasks ?? []).map((t) => ({ ...t, title: decrypt(t.title) }));
+  const rawTasks = [...(companyRows ?? []), ...(personalRows ?? [])]
+    .sort((a, b) => (b[dateColumn] ?? "").localeCompare(a[dateColumn] ?? ""))
+    .slice(0, 100);
+  const tasks = rawTasks.map((t) => ({ ...t, title: decrypt(t.title) }));
   const taskIds = tasks.map((t) => t.id);
 
   const { data: auditRows } = taskIds.length
-    ? await supabase
+    ? await serviceRole
         .from("audit_log")
         .select("id,task_id,action,created_at,actor:profiles(full_name,email,department:departments(name))")
         .in("task_id", taskIds)
@@ -68,7 +99,7 @@ export default async function HistoryPage({
 
   return (
     <div className="flex flex-col gap-4">
-      <h1 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">History</h1>
+      <h1 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">Activity Log</h1>
 
       <form className="flex flex-wrap items-end gap-3 rounded-xl border border-zinc-200 bg-white p-3 dark:border-zinc-800 dark:bg-zinc-900">
         <div className="flex w-full flex-col gap-1 sm:w-auto">

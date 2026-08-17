@@ -14,11 +14,11 @@ interface NavItem {
 
 const NAV_ITEMS: NavItem[] = [
   { href: "/dashboard", label: "Dashboard" },
+  { href: "/departments", label: "Company Overview", roles: ["boss_boss", "supervisor"] },
   { href: "/tasks", label: "Tasks" },
   { href: "/calendar", label: "Calendar" },
-  { href: "/history", label: "History" },
+  { href: "/history", label: "Activity Log" },
   { href: "/announcements", label: "Announcements" },
-  { href: "/departments", label: "Company Overview", roles: ["boss_boss", "supervisor"] },
   { href: "/accounts", label: "Accounts", roles: ["boss_boss", "supervisor"] },
 ];
 

@@ -1,4 +1,6 @@
+import { startOfDay, startOfWeek, startOfMonth, startOfYear, subDays, subWeeks, subMonths, subYears, format } from "date-fns";
 import { createClient } from "@/lib/supabase/server";
+import { createServiceRoleClient } from "@/lib/supabase/service-role";
 import { decrypt } from "@/lib/encryption";
 import type { HealthStatus } from "@/lib/constants";
 import type { Department } from "@/lib/types";
@@ -74,24 +76,30 @@ export async function getRecentlyCompleted(limit = 8, departmentId?: string): Pr
   return (data ?? []).map((t) => ({ ...t, title: decrypt(t.title) }));
 }
 
-export interface OverdueBlockedTask {
+export interface NeedsAttentionTask {
   id: string;
   title: string;
   status: string;
   deadline: string | null;
   creator_department: { name: string } | null;
+  reason: "overdue" | "blocked" | "due_soon";
 }
 
-export async function getOverdueAndBlockedTasks(departmentId?: string): Promise<OverdueBlockedTask[]> {
+// Replaces the old separate "Overdue & Blocked" and "Upcoming Deadlines"
+// widgets (client feedback: the two were near-duplicates competing for the
+// same dashboard real estate) — one query, one ranked list, tagged with why
+// each task showed up so the UI can still label it distinctly.
+export async function getNeedsAttentionTasks(days = 14, departmentId?: string): Promise<NeedsAttentionTask[]> {
   const supabase = await createClient();
   const nowIso = new Date().toISOString();
+  const untilIso = new Date(Date.now() + days * 86_400_000).toISOString();
 
   let query = supabase
     .from("tasks")
     .select("id,title,status,deadline,creator_department:departments(name)")
     .not("status", "in", "(done,cancelled)")
-    .or(`status.eq.blocked,deadline.lt.${nowIso}`)
-    .order("deadline", { ascending: true });
+    .or(`status.eq.blocked,deadline.lt.${nowIso},and(deadline.gte.${nowIso},deadline.lte.${untilIso})`)
+    .order("deadline", { ascending: true, nullsFirst: false });
 
   if (departmentId) {
     const taskIds = await getDepartmentTaskIds(supabase, departmentId);
@@ -100,37 +108,14 @@ export async function getOverdueAndBlockedTasks(departmentId?: string): Promise<
   }
 
   const { data } = await query;
-  return ((data ?? []) as unknown as OverdueBlockedTask[]).map((t) => ({ ...t, title: decrypt(t.title) }));
-}
-
-export interface UpcomingDeadlineTask {
-  id: string;
-  title: string;
-  deadline: string;
-  creator_department: { name: string } | null;
-}
-
-export async function getUpcomingDeadlines(days = 14, departmentId?: string): Promise<UpcomingDeadlineTask[]> {
-  const supabase = await createClient();
-  const now = new Date().toISOString();
-  const until = new Date(Date.now() + days * 86_400_000).toISOString();
-
-  let query = supabase
-    .from("tasks")
-    .select("id,title,deadline,creator_department:departments(name)")
-    .not("status", "in", "(done,cancelled)")
-    .gte("deadline", now)
-    .lte("deadline", until)
-    .order("deadline", { ascending: true });
-
-  if (departmentId) {
-    const taskIds = await getDepartmentTaskIds(supabase, departmentId);
-    if (taskIds.length === 0) return [];
-    query = query.in("id", taskIds);
-  }
-
-  const { data } = await query;
-  return ((data ?? []) as unknown as UpcomingDeadlineTask[]).map((t) => ({ ...t, title: decrypt(t.title) }));
+  const reasonRank = { overdue: 0, blocked: 1, due_soon: 2 };
+  return ((data ?? []) as unknown as Omit<NeedsAttentionTask, "reason">[])
+    .map((t) => {
+      const reason: NeedsAttentionTask["reason"] =
+        t.deadline && t.deadline < nowIso ? "overdue" : t.status === "blocked" ? "blocked" : "due_soon";
+      return { ...t, title: decrypt(t.title), reason };
+    })
+    .sort((a, b) => reasonRank[a.reason] - reasonRank[b.reason] || (a.deadline ?? "").localeCompare(b.deadline ?? ""));
 }
 
 export interface DepartmentHealth {
@@ -217,4 +202,177 @@ export async function getAnnouncements(departmentId?: string | null): Promise<An
     title: decrypt(a.title),
     body: decrypt(a.body),
   }));
+}
+
+export type TrendBucket = "day" | "week" | "month" | "year";
+
+// How many buckets back each granularity shows — enough to see a real trend
+// without the chart becoming unreadable (30 days, ~1 quarter of weeks, a
+// year of months, a few years).
+const TREND_PERIODS: Record<TrendBucket, number> = { day: 30, week: 12, month: 12, year: 5 };
+
+function bucketStart(bucket: TrendBucket, date: Date): Date {
+  switch (bucket) {
+    case "day":
+      return startOfDay(date);
+    case "week":
+      return startOfWeek(date, { weekStartsOn: 1 });
+    case "month":
+      return startOfMonth(date);
+    case "year":
+      return startOfYear(date);
+  }
+}
+
+function subPeriod(bucket: TrendBucket, date: Date, n: number): Date {
+  switch (bucket) {
+    case "day":
+      return subDays(date, n);
+    case "week":
+      return subWeeks(date, n);
+    case "month":
+      return subMonths(date, n);
+    case "year":
+      return subYears(date, n);
+  }
+}
+
+function bucketLabel(bucket: TrendBucket, date: Date): string {
+  switch (bucket) {
+    case "day":
+    case "week":
+      return format(date, "MMM d");
+    case "month":
+      return format(date, "MMM yyyy");
+    case "year":
+      return format(date, "yyyy");
+  }
+}
+
+export interface CompletionTrendPoint {
+  label: string;
+  completed: number;
+  total: number;
+  percent: number;
+}
+
+// A task counts in whichever bucket its created_at falls into, "completed"
+// meaning its *current* status is done — same definition getCompletionRate
+// already uses for a single period, just repeated across a range of them.
+export async function getCompletionRateTrend(bucket: TrendBucket, departmentId?: string): Promise<CompletionTrendPoint[]> {
+  const supabase = await createClient();
+  const periods = TREND_PERIODS[bucket];
+  const now = new Date();
+  const rangeStart = bucketStart(bucket, subPeriod(bucket, now, periods - 1));
+
+  let query = supabase.from("tasks").select("status,created_at").gte("created_at", rangeStart.toISOString());
+  if (departmentId) {
+    const taskIds = await getDepartmentTaskIds(supabase, departmentId);
+    if (taskIds.length === 0) {
+      return Array.from({ length: periods }, (_, i) => ({
+        label: bucketLabel(bucket, bucketStart(bucket, subPeriod(bucket, now, periods - 1 - i))),
+        completed: 0,
+        total: 0,
+        percent: 0,
+      }));
+    }
+    query = query.in("id", taskIds);
+  }
+
+  const { data } = await query;
+  const tasks = data ?? [];
+
+  const points: CompletionTrendPoint[] = [];
+  for (let k = periods - 1; k >= 0; k--) {
+    const bStart = bucketStart(bucket, subPeriod(bucket, now, k));
+    const bEnd = bucketStart(bucket, subPeriod(bucket, now, k - 1));
+    const inBucket = tasks.filter((t) => t.created_at >= bStart.toISOString() && t.created_at < bEnd.toISOString());
+    const completed = inBucket.filter((t) => t.status === "done").length;
+    const total = inBucket.length;
+    points.push({ label: bucketLabel(bucket, bStart), completed, total, percent: total === 0 ? 0 : Math.round((completed / total) * 100) });
+  }
+  return points;
+}
+
+export interface UpcomingBirthday {
+  profileId: string;
+  name: string;
+  month: number;
+  day: number;
+  daysUntil: number;
+}
+
+// Month/day only (see 0025_profile_birthday.sql) — no birth year is stored,
+// so this only ever reports "when," never age.
+export async function getUpcomingBirthdays(days = 30): Promise<UpcomingBirthday[]> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("profiles")
+    .select("id,full_name,email,birthday_month,birthday_day")
+    .not("birthday_month", "is", null)
+    .not("birthday_day", "is", null);
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const year = today.getFullYear();
+
+  return (data ?? [])
+    .map((p) => {
+      const month = p.birthday_month as number;
+      const day = p.birthday_day as number;
+      let next = new Date(year, month - 1, day);
+      if (next < today) next = new Date(year + 1, month - 1, day);
+      const daysUntil = Math.round((next.getTime() - today.getTime()) / 86_400_000);
+      return { profileId: p.id, name: p.full_name || p.email, month, day, daysUntil };
+    })
+    .filter((p) => p.daysUntil <= days)
+    .sort((a, b) => a.daysUntil - b.daysUntil);
+}
+
+export interface DocumentTemplateItem {
+  id: string;
+  fileName: string;
+  storagePath: string;
+  createdAt: string;
+  uploadedBy: string | null;
+  downloadUrl: string | null;
+}
+
+// Signed URLs are generated with the service role client rather than relying
+// on storage.objects RLS, matching the lesson from task attachments — see
+// the upload path in tasks/actions.ts for why WITH CHECK policies involving
+// a relation lookup aren't trusted here. Writes go through the same client,
+// gated by an app-level role check (departments/template-actions.ts), not a
+// storage policy.
+export async function getDocumentTemplates(): Promise<DocumentTemplateItem[]> {
+  const supabase = await createClient();
+  const serviceRole = createServiceRoleClient();
+  const { data } = await supabase
+    .from("document_templates")
+    .select("id,file_name,storage_path,created_at,uploader:profiles(full_name,email)")
+    .order("created_at", { ascending: false });
+
+  const rows = (data ?? []) as unknown as Array<{
+    id: string;
+    file_name: string;
+    storage_path: string;
+    created_at: string;
+    uploader: { full_name: string | null; email: string } | null;
+  }>;
+
+  return Promise.all(
+    rows.map(async (row) => {
+      const { data: signed } = await serviceRole.storage
+        .from("document-templates")
+        .createSignedUrl(row.storage_path, 300);
+      return {
+        id: row.id,
+        fileName: row.file_name,
+        storagePath: row.storage_path,
+        createdAt: row.created_at,
+        uploadedBy: row.uploader?.full_name ?? row.uploader?.email ?? null,
+        downloadUrl: signed?.signedUrl ?? null,
+      };
+    })
+  );
 }

@@ -36,17 +36,20 @@ export interface DepartmentLegendEntry {
 function renderEventContent(arg: EventContentArg) {
   const props = arg.event.extendedProps as CalendarEventInput["extendedProps"];
   const isDone = props.taskStatus === "done";
+  const color = arg.event.backgroundColor || arg.event.borderColor;
 
   return (
     <div className={clsx("flex min-w-0 items-center gap-1 px-0.5", isDone && "opacity-60")}>
       {/* Drawn ourselves rather than relying on FullCalendar's own dot/
           background coloring, which is what differs between its two
           inconsistent display modes — see the CSS override in
-          globals.css for why. Color alone (via taskCalendarColor) already
-          distinguishes overdue/blocked/done, so no separate icon is needed. */}
+          globals.css for why. Color already distinguishes overdue/blocked/
+          done; shape (circle vs. diamond) is the only thing separating a
+          task deadline from a meeting/event, since emoji/icons are off the
+          table — see the legend below. */}
       <span
-        className="h-1.5 w-1.5 shrink-0 rounded-full"
-        style={{ background: arg.event.backgroundColor || arg.event.borderColor }}
+        className={clsx("h-1.5 w-1.5 shrink-0", props.type === "meeting" ? "rotate-45" : "rounded-full")}
+        style={{ background: color }}
       />
       <span className={clsx("truncate", isDone && "line-through")}>{arg.event.title}</span>
     </div>
@@ -144,6 +147,14 @@ export function CalendarView({
       )}
 
       <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1.5 border-t border-zinc-100 pt-3 text-xs text-zinc-500 dark:border-zinc-800 dark:text-zinc-400">
+        <span className="flex items-center gap-1.5">
+          <span className="h-2 w-2 rounded-full bg-zinc-500" />
+          Task deadline
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="h-2 w-2 rotate-45 bg-zinc-500" />
+          Meeting/Event
+        </span>
         <span className="flex items-center gap-1">
           <span className="h-2 w-2 rounded-full" style={{ background: "hsl(25 85% 50%)" }} />
           Overdue
