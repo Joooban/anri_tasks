@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { redirect } from "next/navigation";
+import clsx from "clsx";
 import { getCurrentProfile } from "@/lib/get-current-profile";
 import { getPreview } from "@/lib/get-preview";
 import { getDepartments, getFullAccountDepartments } from "@/lib/queries";
@@ -105,11 +106,17 @@ export default async function DashboardPage() {
         <div className="grid gap-4 lg:grid-cols-2">
           {widgetOrder.filter((w) => enabledWidgets.includes(w)).map((w) => (
             // department_tiles needs room to list every department (this
-            // company has 14, with genuinely long names) — forcing it into
-            // a 50/50 split next to a small stat card never looks balanced,
-            // so it always takes the full row. Everything else pairs up
-            // normally at half-width.
-            <div key={w} className={w === "department_tiles" ? "lg:col-span-2" : ""}>
+            // company has 14, with genuinely long names), and the client
+            // asked for announcements to span the full row too — both
+            // always take the full row rather than a 50/50 split.
+            // completion_rate and needs_attention are the only widgets that
+            // still pair up 50/50 by default; [&>*]:h-full stretches
+            // whichever widget's card to match its row partner's height
+            // (a no-op for the full-width ones, since they have no partner).
+            <div
+              key={w}
+              className={clsx("[&>*]:h-full", (w === "department_tiles" || w === "announcements") && "lg:col-span-2")}
+            >
               {widgetMap[w]}
             </div>
           ))}
