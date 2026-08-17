@@ -69,23 +69,12 @@ alter table admin_roles enable row level security;
 alter table admin_role_permissions enable row level security;
 alter table admin_approval_requests enable row level security;
 
--- Read access is plain policies (role names/permissions/pending requests
--- aren't sensitive the way task content is, and the accounts UI needs to
--- list them directly) — all writes go through the RPCs below, matching the
--- established convention (RLS WITH CHECK policies involving a lookup have a
--- documented history of silently rejecting valid writes in this project).
-create policy admin_roles_select on admin_roles for select
-  to authenticated using (true);
-
-create policy admin_role_permissions_select on admin_role_permissions for select
-  to authenticated using (true);
-
-create policy admin_approval_requests_select on admin_approval_requests for select
-  to authenticated using (is_any_admin());
-
 -- ---------------------------------------------------------------------------
 -- has_permission(): the one function every new/updated policy and RPC below
--- calls. Callable directly from the app via supabase.rpc() too.
+-- calls (including the SELECT policies right after it, which is why these
+-- function definitions come before any policy that references them —
+-- Postgres resolves a policy's function call at creation time). Callable
+-- directly from the app via supabase.rpc() too.
 -- ---------------------------------------------------------------------------
 create or replace function has_permission(p_permission text) returns boolean
 language sql stable security definer set search_path = public as $$
@@ -134,6 +123,20 @@ language sql stable security definer set search_path = public as $$
   end;
 $$;
 grant execute on function get_my_permissions_rpc() to authenticated;
+
+-- Read access is plain policies (role names/permissions/pending requests
+-- aren't sensitive the way task content is, and the accounts UI needs to
+-- list them directly) — all writes go through the RPCs below, matching the
+-- established convention (RLS WITH CHECK policies involving a lookup have a
+-- documented history of silently rejecting valid writes in this project).
+create policy admin_roles_select on admin_roles for select
+  to authenticated using (true);
+
+create policy admin_role_permissions_select on admin_role_permissions for select
+  to authenticated using (true);
+
+create policy admin_approval_requests_select on admin_approval_requests for select
+  to authenticated using (is_any_admin());
 
 -- ---------------------------------------------------------------------------
 -- Admin role CRUD — "self-defining roles" / "permission templates."

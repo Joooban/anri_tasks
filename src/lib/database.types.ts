@@ -866,7 +866,10 @@ export type Database = {
       }
       my_department_id: { Args: never; Returns: string }
       my_role: { Args: never; Returns: string }
-      reactivate_user_rpc: { Args: { p_profile_id: string }; Returns: undefined }
+      reactivate_user_rpc: {
+        Args: { p_profile_id: string }
+        Returns: undefined
+      }
       reject_admin_role_request_rpc: {
         Args: { p_reason: string; p_request_id: string }
         Returns: undefined
