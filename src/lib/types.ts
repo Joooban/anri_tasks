@@ -65,6 +65,29 @@ export interface Profile {
   avatar_url: string | null;
   birthday_month: number | null;
   birthday_day: number | null;
+  admin_role_id: string | null;
+  deactivated_at: string | null;
+  created_at: string;
+}
+
+export interface AdminRole {
+  id: string;
+  name: string;
+  description: string | null;
+  requires_approval: boolean;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AdminApprovalRequest {
+  id: string;
+  target_profile_id: string;
+  requested_admin_role_id: string | null;
+  requested_by: string;
+  status: "pending" | "approved" | "rejected";
+  resolved_by: string | null;
+  resolved_at: string | null;
   created_at: string;
 }
 

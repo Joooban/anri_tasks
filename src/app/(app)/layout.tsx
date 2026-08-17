@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { getCurrentProfile } from "@/lib/get-current-profile";
 import { getPreview } from "@/lib/get-preview";
 import { getDepartments } from "@/lib/queries";
+import { createClient } from "@/lib/supabase/server";
 import { AppShell } from "@/components/nav/app-shell";
 import { SignOutButton } from "@/components/nav/sign-out-button";
 
@@ -37,6 +38,12 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
   const departments = canPreview ? await getDepartments() : [];
   const previewDepartment = preview ? departments.find((d) => d.id === preview.departmentId) : null;
 
+  // Gates the Company Overview / Accounts nav links — true for
+  // boss_boss/supervisor (as before) and now also for anyone holding a
+  // custom Admin role with at least one permission (0027_admin_roles_and_permissions.sql).
+  const supabase = await createClient();
+  const { data: canAccessAdmin } = await supabase.rpc("is_any_admin");
+
   // What the Sidebar renders is driven by the effective (possibly
   // previewed) role/department. Real identity — used for auth, RLS, and
   // everything the server actions do — never changes; this only swaps what
@@ -55,6 +62,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
       email={profile.email}
       topBarRole={profile.role}
       previewInfo={preview && previewDepartment ? { role: preview.role, departmentName: previewDepartment.name } : null}
+      canAccessAdmin={canAccessAdmin ?? false}
     >
       {children}
     </AppShell>

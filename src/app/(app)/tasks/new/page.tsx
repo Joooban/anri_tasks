@@ -14,11 +14,14 @@ export default async function NewTaskPage() {
     (await getPreview()) !== null;
   if (isPreviewing) redirect("/tasks");
 
-  const [departments, profiles, taskTypes] = await Promise.all([
+  const [departments, allProfiles, taskTypes] = await Promise.all([
     getDepartments(),
     getProfiles(),
     getTaskTypes(),
   ]);
+  // Removed accounts (see 0028_user_deactivation.sql) shouldn't be pickable
+  // for new work going forward — they stay in the app's history untouched.
+  const profiles = allProfiles.filter((p) => !p.deactivated_at);
 
   return (
     <div className="flex flex-col gap-4">

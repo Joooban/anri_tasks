@@ -4,12 +4,11 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { friendlyError } from "@/lib/friendly-error";
 
-// Relies on the task_types_write RLS policy (0003_rls.sql), which is
-// already scoped to is_boss_or_supervisor() on both USING and WITH CHECK —
-// unlike the policies removed in 0019, there's no column-tampering risk
-// here (any value written still requires being boss_boss/supervisor), so
-// this doesn't need the RPC pattern the way role/task/announcement writes
-// do. Same approach as updateAccount (accounts/actions.ts).
+// Relies on the task_types_write RLS policy (0003_rls.sql, updated in 0027
+// to has_permission('manage_task_types')) — there's no column-tampering
+// risk here (any value written still requires that permission), so this
+// doesn't need the RPC pattern the way role/task/announcement writes do.
+// Same approach as document-template management (departments/template-actions.ts).
 
 async function requireAdmin() {
   const supabase = await createClient();
@@ -18,9 +17,9 @@ async function requireAdmin() {
   } = await supabase.auth.getUser();
   if (!user) return { supabase, error: "Not signed in." } as const;
 
-  const { data: caller } = await supabase.from("profiles").select("role").eq("id", user.id).single();
-  if (!caller || (caller.role !== "boss_boss" && caller.role !== "supervisor")) {
-    return { supabase, error: "Only the President or Supervisors can manage task types." } as const;
+  const { data: allowed } = await supabase.rpc("has_permission", { p_permission: "manage_task_types" });
+  if (!allowed) {
+    return { supabase, error: "You don't have permission to manage task types." } as const;
   }
   return { supabase, error: null } as const;
 }

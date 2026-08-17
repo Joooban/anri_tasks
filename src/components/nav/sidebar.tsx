@@ -9,17 +9,17 @@ import type { Department, Role } from "@/lib/types";
 interface NavItem {
   href: string;
   label: string;
-  roles?: Role[];
+  adminOnly?: boolean;
 }
 
 const NAV_ITEMS: NavItem[] = [
   { href: "/dashboard", label: "Dashboard" },
-  { href: "/departments", label: "Company Overview", roles: ["boss_boss", "supervisor"] },
+  { href: "/departments", label: "Company Overview", adminOnly: true },
   { href: "/tasks", label: "Tasks" },
   { href: "/calendar", label: "Calendar" },
   { href: "/history", label: "Activity Log" },
   { href: "/announcements", label: "Announcements" },
-  { href: "/accounts", label: "Accounts", roles: ["boss_boss", "supervisor"] },
+  { href: "/accounts", label: "Accounts", adminOnly: true },
 ];
 
 export function Sidebar({
@@ -28,12 +28,14 @@ export function Sidebar({
   canPreview,
   isPreviewing,
   departments,
+  canAccessAdmin,
 }: {
   role: Role;
   departmentName: string | null;
   canPreview: boolean;
   isPreviewing: boolean;
   departments: Department[];
+  canAccessAdmin: boolean;
 }) {
   const pathname = usePathname();
 
@@ -47,7 +49,7 @@ export function Sidebar({
       </div>
 
       <ul className="flex flex-1 flex-col gap-1">
-        {NAV_ITEMS.filter((item) => !item.roles || item.roles.includes(role)).map((item) => {
+        {NAV_ITEMS.filter((item) => !item.adminOnly || canAccessAdmin).map((item) => {
           const active = pathname === item.href || pathname.startsWith(item.href + "/");
           return (
             <li key={item.href}>

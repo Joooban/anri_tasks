@@ -23,9 +23,9 @@ async function requireAdmin() {
   } = await supabase.auth.getUser();
   if (!user) return { userId: null, error: "Not signed in." } as const;
 
-  const { data: caller } = await supabase.from("profiles").select("role").eq("id", user.id).single();
-  if (!caller || (caller.role !== "boss_boss" && caller.role !== "supervisor")) {
-    return { userId: null, error: "Only the President or Supervisors can manage document templates." } as const;
+  const { data: allowed } = await supabase.rpc("has_permission", { p_permission: "manage_document_templates" });
+  if (!allowed) {
+    return { userId: null, error: "You don't have permission to manage document templates." } as const;
   }
   return { userId: user.id, error: null } as const;
 }

@@ -3,6 +3,7 @@ import Link from "next/link";
 import clsx from "clsx";
 import { getCurrentProfile } from "@/lib/get-current-profile";
 import { getFullAccountDepartments } from "@/lib/queries";
+import { getMyPermissions, hasAnyPermission } from "@/lib/get-permissions";
 import {
   getDepartmentHealthGrid,
   getCompletionRateTrend,
@@ -30,7 +31,9 @@ export default async function DepartmentsPage({
 }) {
   const current = await getCurrentProfile();
   if (!current) redirect("/login");
-  if (current.profile.role !== "boss_boss" && current.profile.role !== "supervisor") {
+
+  const permissions = await getMyPermissions();
+  if (!hasAnyPermission(permissions)) {
     redirect("/dashboard");
   }
 
@@ -95,7 +98,7 @@ export default async function DepartmentsPage({
 
       <div className="grid gap-4 lg:grid-cols-2">
         <UpcomingBirthdaysCard items={birthdays} />
-        <DocumentTemplatesCard items={templates} canManage />
+        <DocumentTemplatesCard items={templates} canManage={permissions.has("manage_document_templates")} />
       </div>
     </div>
   );

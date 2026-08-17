@@ -22,6 +22,7 @@ export function AppShell({
   email,
   topBarRole,
   previewInfo,
+  canAccessAdmin,
   children,
 }: {
   role: Role;
@@ -33,6 +34,7 @@ export function AppShell({
   email: string;
   topBarRole: Role;
   previewInfo: { role: Role; departmentName: string } | null;
+  canAccessAdmin: boolean;
   children: ReactNode;
 }) {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -72,6 +74,7 @@ export function AppShell({
           canPreview={canPreview}
           isPreviewing={isPreviewing}
           departments={departments}
+          canAccessAdmin={canAccessAdmin}
         />
       </div>
 

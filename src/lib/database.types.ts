@@ -14,6 +14,129 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_approval_requests: {
+        Row: {
+          created_at: string
+          id: string
+          requested_admin_role_id: string | null
+          requested_by: string
+          resolved_at: string | null
+          resolved_by: string | null
+          status: string
+          target_profile_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          requested_admin_role_id?: string | null
+          requested_by: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+          target_profile_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          requested_admin_role_id?: string | null
+          requested_by?: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+          target_profile_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "admin_approval_requests_requested_admin_role_id_fkey"
+            columns: ["requested_admin_role_id"]
+            isOneToOne: false
+            referencedRelation: "admin_roles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "admin_approval_requests_requested_by_fkey"
+            columns: ["requested_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "admin_approval_requests_resolved_by_fkey"
+            columns: ["resolved_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "admin_approval_requests_target_profile_id_fkey"
+            columns: ["target_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      admin_role_permissions: {
+        Row: {
+          permission: string
+          role_id: string
+        }
+        Insert: {
+          permission: string
+          role_id: string
+        }
+        Update: {
+          permission?: string
+          role_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "admin_role_permissions_role_id_fkey"
+            columns: ["role_id"]
+            isOneToOne: false
+            referencedRelation: "admin_roles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      admin_roles: {
+        Row: {
+          created_at: string
+          created_by: string
+          description: string | null
+          id: string
+          name: string
+          requires_approval: boolean
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          description?: string | null
+          id?: string
+          name: string
+          requires_approval?: boolean
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          id?: string
+          name?: string
+          requires_approval?: boolean
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "admin_roles_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       allowed_emails: {
         Row: {
           added_by: string | null
@@ -285,10 +408,12 @@ export type Database = {
       }
       profiles: {
         Row: {
+          admin_role_id: string | null
           avatar_url: string | null
           birthday_day: number | null
           birthday_month: number | null
           created_at: string
+          deactivated_at: string | null
           department_id: string | null
           email: string
           full_name: string | null
@@ -296,10 +421,12 @@ export type Database = {
           role: string
         }
         Insert: {
+          admin_role_id?: string | null
           avatar_url?: string | null
           birthday_day?: number | null
           birthday_month?: number | null
           created_at?: string
+          deactivated_at?: string | null
           department_id?: string | null
           email: string
           full_name?: string | null
@@ -307,10 +434,12 @@ export type Database = {
           role?: string
         }
         Update: {
+          admin_role_id?: string | null
           avatar_url?: string | null
           birthday_day?: number | null
           birthday_month?: number | null
           created_at?: string
+          deactivated_at?: string | null
           department_id?: string | null
           email?: string
           full_name?: string | null
@@ -318,6 +447,13 @@ export type Database = {
           role?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "profiles_admin_role_id_fkey"
+            columns: ["admin_role_id"]
+            isOneToOne: false
+            referencedRelation: "admin_roles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "profiles_department_id_fkey"
             columns: ["department_id"]
@@ -629,6 +765,14 @@ export type Database = {
         Args: { p_body: string; p_task_id: string }
         Returns: string
       }
+      approve_admin_role_request_rpc: {
+        Args: { p_request_id: string }
+        Returns: undefined
+      }
+      assign_admin_role_rpc: {
+        Args: { p_admin_role_id: string; p_profile_id: string }
+        Returns: Json
+      }
       block_step_rpc: {
         Args: { p_assignee_id: string; p_notes: string }
         Returns: undefined
@@ -642,6 +786,15 @@ export type Database = {
       cancel_task_rpc: { Args: { p_task_id: string }; Returns: undefined }
       complete_step_rpc: { Args: { p_assignee_id: string }; Returns: undefined }
       confirm_step_rpc: { Args: { p_assignee_id: string }; Returns: undefined }
+      create_admin_role_rpc: {
+        Args: {
+          p_description: string
+          p_name: string
+          p_permissions: string[]
+          p_requires_approval: boolean
+        }
+        Returns: string
+      }
       create_announcement_rpc: {
         Args: {
           p_body: string
@@ -676,6 +829,7 @@ export type Database = {
         }
         Returns: string
       }
+      delete_admin_role_rpc: { Args: { p_role_id: string }; Returns: undefined }
       delete_announcement_rpc: { Args: { p_id: string }; Returns: undefined }
       delete_cancelled_task_rpc: {
         Args: { p_task_id: string }
@@ -685,6 +839,9 @@ export type Database = {
         Args: { p_assignee_id: string }
         Returns: undefined
       }
+      get_my_permissions_rpc: { Args: never; Returns: string[] }
+      has_permission: { Args: { p_permission: string }; Returns: boolean }
+      is_any_admin: { Args: never; Returns: boolean }
       is_assignee: {
         Args: { p_department_id: string; p_profile_id: string }
         Returns: boolean
@@ -709,11 +866,37 @@ export type Database = {
       }
       my_department_id: { Args: never; Returns: string }
       my_role: { Args: never; Returns: string }
+      reactivate_user_rpc: { Args: { p_profile_id: string }; Returns: undefined }
+      reject_admin_role_request_rpc: {
+        Args: { p_reason: string; p_request_id: string }
+        Returns: undefined
+      }
       remove_allowed_email_rpc: {
         Args: { p_email: string }
         Returns: undefined
       }
+      remove_user_rpc: { Args: { p_profile_id: string }; Returns: undefined }
       unblock_step_rpc: { Args: { p_assignee_id: string }; Returns: undefined }
+      update_account_rpc: {
+        Args: {
+          p_birthday_day: number
+          p_birthday_month: number
+          p_department_id: string
+          p_profile_id: string
+          p_role: string
+        }
+        Returns: undefined
+      }
+      update_admin_role_rpc: {
+        Args: {
+          p_description: string
+          p_name: string
+          p_permissions: string[]
+          p_requires_approval: boolean
+          p_role_id: string
+        }
+        Returns: undefined
+      }
       update_announcement_rpc: {
         Args: {
           p_body: string
