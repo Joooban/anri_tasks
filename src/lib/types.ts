@@ -176,6 +176,23 @@ export interface CalendarEvent {
   created_at: string;
 }
 
+export interface Conversation {
+  id: string;
+  is_group: boolean;
+  name: string | null;
+  created_by: string;
+  created_at: string;
+  last_message_at: string;
+}
+
+export interface Message {
+  id: string;
+  conversation_id: string;
+  sender_id: string;
+  body: string;
+  created_at: string;
+}
+
 export interface TaskComment {
   id: string;
   task_id: string;

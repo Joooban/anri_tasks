@@ -23,6 +23,7 @@ export function AppShell({
   topBarRole,
   previewInfo,
   canAccessAdmin,
+  unreadMessageCount,
   children,
 }: {
   role: Role;
@@ -35,6 +36,7 @@ export function AppShell({
   topBarRole: Role;
   previewInfo: { role: Role; departmentName: string } | null;
   canAccessAdmin: boolean;
+  unreadMessageCount: number;
   children: ReactNode;
 }) {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -75,6 +77,7 @@ export function AppShell({
           isPreviewing={isPreviewing}
           departments={departments}
           canAccessAdmin={canAccessAdmin}
+          unreadMessageCount={unreadMessageCount}
         />
       </div>
 

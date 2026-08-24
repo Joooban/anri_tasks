@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { getCurrentProfile } from "@/lib/get-current-profile";
 import { getPreview } from "@/lib/get-preview";
 import { getDepartments } from "@/lib/queries";
+import { getUnreadMessageCount } from "@/lib/messaging-queries";
 import { createClient } from "@/lib/supabase/server";
 import { AppShell } from "@/components/nav/app-shell";
 import { SignOutButton } from "@/components/nav/sign-out-button";
@@ -42,7 +43,10 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
   // boss_boss/supervisor (as before) and now also for anyone holding a
   // custom Admin role with at least one permission (0027_admin_roles_and_permissions.sql).
   const supabase = await createClient();
-  const { data: canAccessAdmin } = await supabase.rpc("is_any_admin");
+  const [{ data: canAccessAdmin }, unreadMessageCount] = await Promise.all([
+    supabase.rpc("is_any_admin"),
+    getUnreadMessageCount(),
+  ]);
 
   // What the Sidebar renders is driven by the effective (possibly
   // previewed) role/department. Real identity — used for auth, RLS, and
@@ -63,6 +67,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
       topBarRole={profile.role}
       previewInfo={preview && previewDepartment ? { role: preview.role, departmentName: previewDepartment.name } : null}
       canAccessAdmin={canAccessAdmin ?? false}
+      unreadMessageCount={unreadMessageCount}
     >
       {children}
     </AppShell>

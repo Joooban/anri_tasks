@@ -336,6 +336,77 @@ export type Database = {
           },
         ]
       }
+      conversation_participants: {
+        Row: {
+          conversation_id: string
+          joined_at: string
+          last_read_at: string | null
+          profile_id: string
+        }
+        Insert: {
+          conversation_id: string
+          joined_at?: string
+          last_read_at?: string | null
+          profile_id: string
+        }
+        Update: {
+          conversation_id?: string
+          joined_at?: string
+          last_read_at?: string | null
+          profile_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversation_participants_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversation_participants_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      conversations: {
+        Row: {
+          created_at: string
+          created_by: string
+          id: string
+          is_group: boolean
+          last_message_at: string
+          name: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          id?: string
+          is_group?: boolean
+          last_message_at?: string
+          name?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          id?: string
+          is_group?: boolean
+          last_message_at?: string
+          name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversations_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       departments: {
         Row: {
           created_at: string
@@ -400,6 +471,45 @@ export type Database = {
           {
             foreignKeyName: "document_templates_uploaded_by_fkey"
             columns: ["uploaded_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      messages: {
+        Row: {
+          body: string
+          conversation_id: string
+          created_at: string
+          id: string
+          sender_id: string
+        }
+        Insert: {
+          body: string
+          conversation_id: string
+          created_at?: string
+          id?: string
+          sender_id: string
+        }
+        Update: {
+          body?: string
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          sender_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messages_sender_id_fkey"
+            columns: ["sender_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -805,6 +915,10 @@ export type Database = {
         }
         Returns: string
       }
+      create_conversation_rpc: {
+        Args: { p_is_group: boolean; p_name: string; p_participant_ids: string[] }
+        Returns: string
+      }
       create_meeting_rpc: {
         Args: {
           p_company_wide: boolean
@@ -839,6 +953,7 @@ export type Database = {
         Returns: undefined
       }
       get_my_permissions_rpc: { Args: never; Returns: string[] }
+      get_unread_message_count_rpc: { Args: never; Returns: number }
       has_permission: { Args: { p_permission: string }; Returns: boolean }
       is_any_admin: { Args: never; Returns: boolean }
       is_assignee: {
@@ -846,6 +961,10 @@ export type Database = {
         Returns: boolean
       }
       is_boss_or_supervisor: { Args: never; Returns: boolean }
+      is_conversation_participant: {
+        Args: { p_conversation_id: string }
+        Returns: boolean
+      }
       is_email_allowed: { Args: { p_email: string }; Returns: boolean }
       list_allowed_emails_rpc: {
         Args: never
@@ -863,6 +982,10 @@ export type Database = {
         }
         Returns: undefined
       }
+      mark_conversation_read_rpc: {
+        Args: { p_conversation_id: string }
+        Returns: undefined
+      }
       my_department_id: { Args: never; Returns: string }
       my_role: { Args: never; Returns: string }
       reactivate_user_rpc: {
@@ -878,6 +1001,10 @@ export type Database = {
         Returns: undefined
       }
       remove_user_rpc: { Args: { p_profile_id: string }; Returns: undefined }
+      send_message_rpc: {
+        Args: { p_body: string; p_conversation_id: string }
+        Returns: string
+      }
       unblock_step_rpc: { Args: { p_assignee_id: string }; Returns: undefined }
       update_account_rpc: {
         Args: {

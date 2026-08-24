@@ -18,6 +18,7 @@ const NAV_ITEMS: NavItem[] = [
   { href: "/tasks", label: "Tasks" },
   { href: "/calendar", label: "Calendar" },
   { href: "/history", label: "Activity Log" },
+  { href: "/messages", label: "Messages" },
   { href: "/announcements", label: "Announcements" },
   { href: "/accounts", label: "Accounts", adminOnly: true },
 ];
@@ -29,6 +30,7 @@ export function Sidebar({
   isPreviewing,
   departments,
   canAccessAdmin,
+  unreadMessageCount,
 }: {
   role: Role;
   departmentName: string | null;
@@ -36,6 +38,7 @@ export function Sidebar({
   isPreviewing: boolean;
   departments: Department[];
   canAccessAdmin: boolean;
+  unreadMessageCount: number;
 }) {
   const pathname = usePathname();
 
@@ -56,13 +59,18 @@ export function Sidebar({
               <Link
                 href={item.href}
                 className={clsx(
-                  "block rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                  "flex items-center justify-between rounded-lg px-3 py-2 text-sm font-medium transition-colors",
                   active
                     ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900"
                     : "text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-50"
                 )}
               >
                 {item.label}
+                {item.href === "/messages" && unreadMessageCount > 0 && (
+                  <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-blue-600 px-1 text-[0.65rem] font-semibold text-white">
+                    {unreadMessageCount > 9 ? "9+" : unreadMessageCount}
+                  </span>
+                )}
               </Link>
             </li>
           );
