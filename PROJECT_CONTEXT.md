@@ -1,5 +1,15 @@
 # ANRI Task Management System — Project Context
 
+## Messaging upgraded to instant push (this session, migration 0033)
+
+Follow-up to the lightweight messaging feature above, same night — the user asked what it'd take to make delivery instant instead of polled, chose to build it. Verified the exact Supabase Realtime Authorization/Broadcast-from-Database API against current docs via WebSearch/WebFetch before writing any SQL, rather than relying on training-data recall for an unfamiliar, security-relevant system-schema surface (`realtime.messages`).
+
+**How it works**: an `AFTER INSERT` trigger on `messages` (`broadcast_new_message()`, calling `realtime.send(...)`) broadcasts only `{conversation_id, message_id}` — never message content — over a private channel named `conversation:<id>`. A new RLS policy on `realtime.messages` reuses `is_conversation_participant()`, so only actual participants can even receive the ping (same privacy model as the rest of messaging — no admin bypass). The client subscribes to that channel and, on receiving a ping, calls the existing `fetchMessages` Server Action — the same decrypt-server-side path used everywhere else, just triggered by a push instead of a timer. This was the whole point of designing it this way: message content (encrypted or not) never touches Realtime, so there's nothing new to keep in sync with `src/lib/encryption.ts`.
+
+The old 4s poll is now a 20s fallback safety net (dropped socket, missed event), not the primary delivery path.
+
+**Verification**: `tsc`/`eslint`/`npm run build` clean; trigger and RLS policy both confirmed present live via direct query (not just the CLI's success message); did an actual end-to-end smoke test — inserted a real test message via the Management API inside a transaction that also cleaned up after itself, confirmed the trigger fired with no error. While verifying, found the user had already independently tried the feature live (a real 3-person group conversation with one message) — left it alone, it's genuine usage, not test residue to clean up.
+
 ## Lightweight internal messaging (this session, migration 0032)
 
 Client's ask: "its own messaging system inside of it." Scoped down with the user to *lightweight* — DMs and small group chats, an unread badge, tied to the existing people already in the app. Built and shipped same-night per explicit "run it," without a formal plan-mode round-trip (the user was heading to sleep and unavailable to review a plan) — design decisions made directly, same rigor as the rest of this session (verified typecheck/lint/build, confirmed live against the database with `pg_query`/`gen types` before considering it done).
