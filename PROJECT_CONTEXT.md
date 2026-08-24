@@ -1,5 +1,19 @@
 # ANRI Task Management System — Project Context
 
+## Lightweight internal messaging (this session, migration 0032)
+
+Client's ask: "its own messaging system inside of it." Scoped down with the user to *lightweight* — DMs and small group chats, an unread badge, tied to the existing people already in the app. Built and shipped same-night per explicit "run it," without a formal plan-mode round-trip (the user was heading to sleep and unavailable to review a plan) — design decisions made directly, same rigor as the rest of this session (verified typecheck/lint/build, confirmed live against the database with `pg_query`/`gen types` before considering it done).
+
+**New tables**: `conversations`, `conversation_participants` (join table, `last_read_at` drives the unread badge), `messages`. RPC-only writes (`create_conversation_rpc`, `send_message_rpc`, `mark_conversation_read_rpc`), matching the established convention — no direct insert/update policies on any of the three tables.
+
+**Deliberately private, a new stance distinct from tasks**: `is_conversation_participant()` has no `is_boss_or_supervisor()` bypass at all — unlike task visibility, Boss/Supervisor get zero special access to conversations they're not part of. Messaging carries the ordinary privacy expectation of a DM/group chat, not something meant to be broadly visible the way task content is.
+
+**No Supabase Realtime — polling instead, and this was a real architectural call, not an oversight**: message bodies are encrypted the same way task titles/comments/announcements already are (`src/lib/encryption.ts`), and the encryption key never reaches the browser. Raw Postgres `postgres_changes` realtime would stream ciphertext directly to a subscribed client with no way to decrypt it. Rather than build server-side broadcast (decrypt server-side, push over a Realtime channel — a real feature in its own right), the thread view polls a Server Action (`fetchMessages`) every 4 seconds while open — same decrypt-on-the-server pattern every other page here already uses, just refreshed periodically instead of pushed instantly. Worth reconsidering if the client wants closer-to-instant delivery later; the polling interval is the whole tradeoff, isolated to one constant in `src/components/messages/message-thread.tsx`.
+
+**Sending marks your own copy as read** (`send_message_rpc` updates the sender's own `last_read_at`, not just the recipients') — without this, your own conversation would show as unread immediately after you post in it.
+
+**Verification status**: `tsc`/`eslint`/`npm run build` clean; migration `0032` confirmed applied and its three tables confirmed present via a direct query, not just the CLI's own success message; `database.types.ts` verified against a real `supabase gen types` post-apply (cosmetic line-wrap diff only). **Not yet done**: any actual manual click-through testing — this shipped without the user available to test it live, same-night. First thing worth doing next session is just opening `/messages` and sending a real message between two accounts.
+
 ## Second security review (this session, migrations 0030-0031)
 
 Prompted by how much authorization surface the admin-roles work added — a full inventory of every RLS policy, RPC, storage policy, server action, and page guard, done fresh rather than assumed from memory. Findings, most severe first:
