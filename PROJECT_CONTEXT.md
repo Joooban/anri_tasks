@@ -1,5 +1,15 @@
 # ANRI Task Management System — Project Context
 
+## Self-service nicknames (this session, migration 0034)
+
+User's ask: some employees sign in with a personal Google account whose display name isn't their real/preferred name — let them set their own nickname. First self-service profile field since `profiles_update_self` was dropped in `0019` (it let anyone grant themselves `boss_boss`) — `update_my_nickname_rpc` only ever touches the caller's own `nickname` column, so it can't reopen that hole.
+
+**First self-service settings surface at all**: a minimal `/profile` page, reached by clicking your own name in the TopBar (no new sidebar nav item — kept it low-footprint). Room to grow later (avatar upload, etc.) without needing a new entry point each time — the page itself already has a natural "more settings" home.
+
+**One shared helper, swept everywhere**: `personDisplayName()`/`PersonLabel` (`src/components/ui/person-label.tsx`) was already the single place every name display in the app went through — `nickname || full_name || email` is now the priority there, and every `profiles(...)` select across the codebase (tasks, comments, audit trails, announcements, messaging, admin activity trail, the Accounts table) got `nickname` added to its column list so the change actually shows up everywhere, not just in new code. `nickname` is optional on the `PersonLike` interface specifically so any select that's missed just degrades gracefully instead of breaking.
+
+**Verified**: `tsc`/`eslint`/`npm run build` clean; column and RPC confirmed present live via direct query; `database.types.ts` re-verified against a real `supabase gen types` run post-apply (cosmetic line-wrap diff only, as with every prior migration this session).
+
 ## Messaging upgraded to instant push (this session, migration 0033)
 
 Follow-up to the lightweight messaging feature above, same night — the user asked what it'd take to make delivery instant instead of polled, chose to build it. Verified the exact Supabase Realtime Authorization/Broadcast-from-Database API against current docs via WebSearch/WebFetch before writing any SQL, rather than relying on training-data recall for an unfamiliar, security-relevant system-schema surface (`realtime.messages`).
