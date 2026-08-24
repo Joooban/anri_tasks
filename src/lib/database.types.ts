@@ -916,7 +916,11 @@ export type Database = {
         Returns: string
       }
       create_conversation_rpc: {
-        Args: { p_is_group: boolean; p_name: string; p_participant_ids: string[] }
+        Args: {
+          p_is_group: boolean
+          p_name: string
+          p_participant_ids: string[]
+        }
         Returns: string
       }
       create_meeting_rpc: {
