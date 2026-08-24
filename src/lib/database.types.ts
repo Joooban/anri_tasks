@@ -1044,7 +1044,10 @@ export type Database = {
         }
         Returns: undefined
       }
-      update_my_nickname_rpc: { Args: { p_nickname: string }; Returns: undefined }
+      update_my_nickname_rpc: {
+        Args: { p_nickname: string }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never
