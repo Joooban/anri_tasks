@@ -2,10 +2,13 @@
 
 import { useEffect, useRef, useState, useTransition } from "react";
 import { sendMessage, markConversationRead, fetchMessages } from "@/app/(app)/messages/actions";
+import { createClient } from "@/lib/supabase/client";
 import { formatDateTime } from "@/lib/format-datetime";
 import type { MessageItem } from "@/lib/messaging-queries";
 
-const POLL_INTERVAL_MS = 4000;
+// Kept as a fallback safety net (connection drops, a missed event) — the
+// real delivery mechanism is the Realtime broadcast below, not this timer.
+const FALLBACK_POLL_INTERVAL_MS = 20000;
 
 export function MessageThread({
   conversationId,
@@ -22,17 +25,36 @@ export function MessageThread({
   const [pending, startTransition] = useTransition();
   const bottomRef = useRef<HTMLDivElement>(null);
 
-  // No push-realtime here (message bodies are encrypted server-side —
-  // see 0032_messaging.sql for why raw Postgres realtime doesn't work for
-  // this) — a lightweight poll instead, same decrypt-on-the-server path as
-  // the initial page load.
+  // Instant delivery via Realtime Broadcast (0033_messaging_realtime.sql) —
+  // the channel only ever carries a {conversation_id, message_id} pointer,
+  // never message content, since content is encrypted server-side and the
+  // key never reaches the browser. Receiving a ping just triggers the same
+  // decrypt-on-the-server fetchMessages() call the initial page load uses.
+  // The interval below is a fallback, not the primary delivery path — in
+  // case the socket drops or an event is missed, the thread still catches
+  // up within FALLBACK_POLL_INTERVAL_MS.
   useEffect(() => {
     markConversationRead(conversationId);
+
+    const supabase = createClient();
+    const channel = supabase.channel(`conversation:${conversationId}`, { config: { private: true } });
+    channel
+      .on("broadcast", { event: "new_message" }, async () => {
+        const fresh = await fetchMessages(conversationId);
+        setMessages(fresh);
+        markConversationRead(conversationId);
+      })
+      .subscribe();
+
     const interval = setInterval(async () => {
       const fresh = await fetchMessages(conversationId);
       setMessages(fresh);
-    }, POLL_INTERVAL_MS);
-    return () => clearInterval(interval);
+    }, FALLBACK_POLL_INTERVAL_MS);
+
+    return () => {
+      clearInterval(interval);
+      supabase.removeChannel(channel);
+    };
   }, [conversationId]);
 
   useEffect(() => {
