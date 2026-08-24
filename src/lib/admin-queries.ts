@@ -26,9 +26,9 @@ export async function getAdminRoles(): Promise<AdminRoleWithPermissions[]> {
 export interface PendingApprovalItem {
   id: string;
   target_profile_id: string;
-  target: { full_name: string | null; email: string } | null;
+  target: { full_name: string | null; email: string; nickname: string | null } | null;
   requestedRole: { name: string } | null;
-  requestedBy: { full_name: string | null; email: string } | null;
+  requestedBy: { full_name: string | null; email: string; nickname: string | null } | null;
   created_at: string;
 }
 
@@ -40,7 +40,7 @@ export async function getPendingApprovalRequests(): Promise<PendingApprovalItem[
   const { data } = await supabase
     .from("admin_approval_requests")
     .select(
-      "id,target_profile_id,created_at,target:profiles!admin_approval_requests_target_profile_id_fkey(full_name,email),requestedRole:admin_roles(name),requestedBy:profiles!admin_approval_requests_requested_by_fkey(full_name,email)"
+      "id,target_profile_id,created_at,target:profiles!admin_approval_requests_target_profile_id_fkey(full_name,email,nickname),requestedRole:admin_roles(name),requestedBy:profiles!admin_approval_requests_requested_by_fkey(full_name,email,nickname)"
     )
     .eq("status", "pending")
     .order("created_at", { ascending: false });
@@ -52,7 +52,7 @@ export interface AdminAuditEntry {
   action: string;
   details: Record<string, unknown> | null;
   created_at: string;
-  actor: { full_name: string | null; email: string } | null;
+  actor: { full_name: string | null; email: string; nickname: string | null } | null;
 }
 
 // task_id is null for every admin-management action (see the new RPCs in
@@ -63,7 +63,7 @@ export async function getAdminAuditLog(limit = 100): Promise<AdminAuditEntry[]> 
   const supabase = await createClient();
   const { data } = await supabase
     .from("audit_log")
-    .select("id,action,details,created_at,actor:profiles(full_name,email)")
+    .select("id,action,details,created_at,actor:profiles(full_name,email,nickname)")
     .is("task_id", null)
     .order("created_at", { ascending: false })
     .limit(limit);

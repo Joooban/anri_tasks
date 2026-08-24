@@ -1,6 +1,7 @@
 "use client";
 
 import type { Department, Profile } from "@/lib/types";
+import { personDisplayName } from "@/components/ui/person-label";
 
 export interface VisibilityEntry {
   key: string;
@@ -33,7 +34,7 @@ export function VisibilityPicker({
     if (!profile) return;
     onChange([
       ...value,
-      { key: crypto.randomUUID(), department_id: null, profile_id: id, label: profile.full_name || profile.email },
+      { key: crypto.randomUUID(), department_id: null, profile_id: id, label: personDisplayName(profile) },
     ]);
   }
 
@@ -70,7 +71,7 @@ export function VisibilityPicker({
           <option value="">+ Add individual…</option>
           {profiles.map((p) => (
             <option key={p.id} value={p.id}>
-              {p.full_name || p.email}
+              {personDisplayName(p)}
             </option>
           ))}
         </select>

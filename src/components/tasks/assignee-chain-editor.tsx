@@ -1,6 +1,7 @@
 "use client";
 
 import type { Department, Profile } from "@/lib/types";
+import { personDisplayName } from "@/components/ui/person-label";
 
 export interface ChainStep {
   key: string;
@@ -108,7 +109,7 @@ export function AssigneeChainEditor({
               <option value="">Select person…</option>
               {profiles.map((p) => (
                 <option key={p.id} value={p.id}>
-                  {p.full_name || p.email}
+                  {personDisplayName(p)}
                 </option>
               ))}
             </select>

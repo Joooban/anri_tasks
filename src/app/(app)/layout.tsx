@@ -62,7 +62,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
       canPreview={canPreview}
       isPreviewing={preview !== null}
       departments={departments}
-      fullName={profile.full_name}
+      fullName={profile.nickname || profile.full_name}
       email={profile.email}
       topBarRole={profile.role}
       previewInfo={preview && previewDepartment ? { role: preview.role, departmentName: previewDepartment.name } : null}

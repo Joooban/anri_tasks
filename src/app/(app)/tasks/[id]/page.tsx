@@ -9,7 +9,7 @@ import { CopyForViberButton } from "@/components/tasks/copy-for-viber-button";
 import { CommentsSection } from "@/components/tasks/comments-section";
 import { DeleteTaskButton } from "@/components/tasks/delete-task-button";
 import { Card, CardTitle, EmptyState } from "@/components/ui/card";
-import { PersonLabel } from "@/components/ui/person-label";
+import { PersonLabel, personDisplayName } from "@/components/ui/person-label";
 import { formatDateTime } from "@/lib/format-datetime";
 import { cancelTask } from "@/app/(app)/tasks/[id]/actions";
 
@@ -54,7 +54,7 @@ export default async function TaskDetailPage({
 
   const activeStep = assignees.find((a) => a.status === "active" || a.status === "pending_approval");
   const activeAssigneeLabel = activeStep
-    ? activeStep.department?.name ?? activeStep.profile?.full_name ?? activeStep.profile?.email ?? null
+    ? activeStep.department?.name ?? (activeStep.profile ? personDisplayName(activeStep.profile) : null)
     : null;
 
   const canManage = profile.role === "boss_boss" || profile.role === "supervisor" || task.created_by === profile.id;

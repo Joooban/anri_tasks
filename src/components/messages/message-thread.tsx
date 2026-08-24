@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useTransition } from "react";
 import { sendMessage, markConversationRead, fetchMessages } from "@/app/(app)/messages/actions";
 import { createClient } from "@/lib/supabase/client";
 import { formatDateTime } from "@/lib/format-datetime";
+import { personDisplayName } from "@/components/ui/person-label";
 import type { MessageItem } from "@/lib/messaging-queries";
 
 // Kept as a fallback safety net (connection drops, a missed event) — the
@@ -95,7 +96,7 @@ export function MessageThread({
                   }`}
                 >
                   {!mine && (
-                    <p className="mb-0.5 text-xs font-medium opacity-70">{m.sender?.full_name || m.sender?.email}</p>
+                    <p className="mb-0.5 text-xs font-medium opacity-70">{personDisplayName(m.sender)}</p>
                   )}
                   <p className="whitespace-pre-wrap">{m.body}</p>
                 </div>

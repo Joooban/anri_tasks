@@ -6,6 +6,7 @@ import { getProfiles } from "@/lib/queries";
 import { EmptyState } from "@/components/ui/card";
 import { NewConversationButton } from "@/components/messages/new-conversation-button";
 import { formatDateTime } from "@/lib/format-datetime";
+import { personDisplayName } from "@/components/ui/person-label";
 
 export default async function MessagesPage() {
   const current = await getCurrentProfile();
@@ -29,8 +30,8 @@ export default async function MessagesPage() {
         <ul className="flex flex-col gap-2">
           {conversations.map((c) => {
             const title = c.isGroup
-              ? (c.name ?? c.otherParticipants.map((p) => p.full_name || p.email).join(", "))
-              : (c.otherParticipants[0]?.full_name || c.otherParticipants[0]?.email || "Unknown");
+              ? (c.name ?? c.otherParticipants.map((p) => personDisplayName(p)).join(", "))
+              : (c.otherParticipants[0] ? personDisplayName(c.otherParticipants[0]) : "Unknown");
             return (
               <li key={c.id}>
                 <Link

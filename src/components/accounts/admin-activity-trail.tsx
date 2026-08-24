@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { formatDateTime } from "@/lib/format-datetime";
+import { personDisplayName } from "@/components/ui/person-label";
 import type { AdminAuditEntry } from "@/lib/admin-queries";
 
 function formatAction(action: string): string {
@@ -38,7 +39,7 @@ export function AdminActivityTrail({
               {formatDateTime(entry.created_at, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}
             </span>
             <span className="text-zinc-700 dark:text-zinc-300">
-              {entry.actor?.full_name ?? entry.actor?.email ?? "System"} — {formatAction(entry.action)}
+              {entry.actor ? personDisplayName(entry.actor) : "System"} — {formatAction(entry.action)}
             </span>
           </li>
         ))}

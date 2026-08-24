@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { decrypt, decryptNullable } from "@/lib/encryption";
+import { personDisplayName } from "@/components/ui/person-label";
 import type { Department, Profile, Role, TaskStatus, TaskType } from "@/lib/types";
 import type { TaskListItem } from "@/components/tasks/task-card";
 
@@ -7,7 +8,7 @@ const TASK_LIST_SELECT = `
   *,
   task_type:task_types(name,color),
   creator_department:departments(name),
-  task_assignees(step_order,status,department:departments(name),profile:profiles!task_assignees_profile_id_fkey(full_name,email,department:departments(name)))
+  task_assignees(step_order,status,department:departments(name),profile:profiles!task_assignees_profile_id_fkey(full_name,email,nickname,department:departments(name)))
 `;
 
 export async function getTaskList(options?: {
@@ -31,14 +32,14 @@ export async function getTaskList(options?: {
       step_order: number;
       status: string;
       department: { name: string } | null;
-      profile: { full_name: string | null; email: string; department: { name: string } | null } | null;
+      profile: { full_name: string | null; email: string; nickname: string | null; department: { name: string } | null } | null;
     }>;
     const active = assignees
       .sort((a, b) => a.step_order - b.step_order)
       .find((a) => a.status === "active" || a.status === "pending_approval");
 
     const activeAssigneeName = active
-      ? (active.department?.name ?? active.profile?.full_name ?? active.profile?.email ?? null)
+      ? (active.department?.name ?? (active.profile ? personDisplayName(active.profile) : null))
       : null;
     // Only individual assignees get a department tag here — a department
     // assignee's name already IS the department.
@@ -87,6 +88,7 @@ export async function getTaskTypes(): Promise<TaskType[]> {
 export interface NamedRef {
   full_name: string | null;
   email: string;
+  nickname: string | null;
   department: { name: string } | null;
 }
 
@@ -114,34 +116,34 @@ export async function getTaskDetail(id: string) {
       supabase
         .from("tasks")
         .select(
-          "*, task_type:task_types(name,color), creator_department:departments(name), creator:profiles(full_name,email,department:departments(name))"
+          "*, task_type:task_types(name,color), creator_department:departments(name), creator:profiles(full_name,email,nickname,department:departments(name))"
         )
         .eq("id", id)
         .maybeSingle(),
       supabase
         .from("task_assignees")
         .select(
-          "*, department:departments(name), profile:profiles!task_assignees_profile_id_fkey(full_name,email,department:departments(name)), completed_by_profile:profiles!task_assignees_completed_by_fkey(full_name,email,department:departments(name))"
+          "*, department:departments(name), profile:profiles!task_assignees_profile_id_fkey(full_name,email,nickname,department:departments(name)), completed_by_profile:profiles!task_assignees_completed_by_fkey(full_name,email,nickname,department:departments(name))"
         )
         .eq("task_id", id)
         .order("step_order"),
       supabase
         .from("task_visibility")
-        .select("*, department:departments(name), profile:profiles(full_name,email,department:departments(name))")
+        .select("*, department:departments(name), profile:profiles(full_name,email,nickname,department:departments(name))")
         .eq("task_id", id),
       supabase
         .from("task_attachments")
-        .select("*, uploader:profiles(full_name,email,department:departments(name))")
+        .select("*, uploader:profiles(full_name,email,nickname,department:departments(name))")
         .eq("task_id", id)
         .order("created_at"),
       supabase
         .from("task_comments")
-        .select("*, author:profiles(full_name,email,department:departments(name))")
+        .select("*, author:profiles(full_name,email,nickname,department:departments(name))")
         .eq("task_id", id)
         .order("created_at"),
       supabase
         .from("audit_log")
-        .select("*, actor:profiles(full_name,email,department:departments(name))")
+        .select("*, actor:profiles(full_name,email,nickname,department:departments(name))")
         .eq("task_id", id)
         .order("created_at"),
     ]);

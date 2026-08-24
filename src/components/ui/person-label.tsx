@@ -1,12 +1,17 @@
 interface PersonLike {
   full_name: string | null;
   email: string;
+  nickname?: string | null;
   department?: { name: string } | null;
 }
 
+// nickname (self-set, see update_my_nickname_rpc) takes priority over
+// full_name (Google account name — not always someone's real/preferred
+// name) — optional on the type so call sites that haven't added it to
+// their select() yet degrade gracefully rather than breaking.
 export function personDisplayName(person: PersonLike | null | undefined): string {
   if (!person) return "Unknown";
-  return person.full_name || person.email;
+  return person.nickname || person.full_name || person.email;
 }
 
 // "Name · Department" — the department tag makes it obvious at a glance

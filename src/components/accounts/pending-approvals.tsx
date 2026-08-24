@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { approveAdminRoleRequest, rejectAdminRoleRequest } from "@/app/(app)/accounts/approval-actions";
 import { Card, CardTitle } from "@/components/ui/card";
+import { personDisplayName } from "@/components/ui/person-label";
 import { formatDateTime } from "@/lib/format-datetime";
 import type { PendingApprovalItem } from "@/lib/admin-queries";
 
@@ -50,10 +51,10 @@ export function PendingApprovals({ items }: { items: PendingApprovalItem[] }) {
           <li key={item.id} className="rounded-lg border border-zinc-200 p-3 dark:border-zinc-800">
             <p className="text-sm text-zinc-800 dark:text-zinc-200">
               Grant <span className="font-medium">{item.requestedRole?.name ?? "Unknown role"}</span> to{" "}
-              <span className="font-medium">{item.target?.full_name ?? item.target?.email ?? "Unknown"}</span>
+              <span className="font-medium">{item.target ? personDisplayName(item.target) : "Unknown"}</span>
             </p>
             <p className="text-xs text-zinc-400">
-              Requested by {item.requestedBy?.full_name ?? item.requestedBy?.email ?? "Unknown"} ·{" "}
+              Requested by {item.requestedBy ? personDisplayName(item.requestedBy) : "Unknown"} ·{" "}
               {formatDateTime(item.created_at, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}
             </p>
 

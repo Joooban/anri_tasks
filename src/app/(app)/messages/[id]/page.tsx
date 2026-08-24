@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile } from "@/lib/get-current-profile";
 import { getConversationMessages } from "@/lib/messaging-queries";
 import { MessageThread } from "@/components/messages/message-thread";
+import { personDisplayName } from "@/components/ui/person-label";
 import type { ConversationParticipant } from "@/lib/messaging-queries";
 
 export default async function ConversationPage({ params }: { params: Promise<{ id: string }> }) {
@@ -14,7 +15,7 @@ export default async function ConversationPage({ params }: { params: Promise<{ i
   const supabase = await createClient();
   const { data: conversation } = await supabase
     .from("conversations")
-    .select("id,is_group,name,conversation_participants(profile_id,profile:profiles(id,full_name,email))")
+    .select("id,is_group,name,conversation_participants(profile_id,profile:profiles(id,full_name,email,nickname))")
     .eq("id", id)
     .maybeSingle();
 
@@ -35,8 +36,10 @@ export default async function ConversationPage({ params }: { params: Promise<{ i
     .map((p) => p.profile)
     .filter((p): p is ConversationParticipant => p !== null);
   const title = conversation.is_group
-    ? (conversation.name ?? others.map((p) => p.full_name || p.email).join(", "))
-    : others[0]?.full_name || others[0]?.email || "Unknown";
+    ? (conversation.name ?? others.map((p) => personDisplayName(p)).join(", "))
+    : others[0]
+      ? personDisplayName(others[0])
+      : "Unknown";
 
   return (
     <div className="flex flex-col gap-3">

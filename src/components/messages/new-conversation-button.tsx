@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { createConversation } from "@/app/(app)/messages/actions";
+import { personDisplayName } from "@/components/ui/person-label";
 import type { Profile } from "@/lib/types";
 
 export function NewConversationButton({ people }: { people: Profile[] }) {
@@ -65,7 +66,7 @@ export function NewConversationButton({ people }: { people: Profile[] }) {
               className="flex items-center gap-2 border-b border-zinc-100 px-3 py-2 text-sm last:border-0 dark:border-zinc-800"
             >
               <input type="checkbox" checked={selected.has(p.id)} onChange={() => toggle(p.id)} />
-              <span className="text-zinc-800 dark:text-zinc-200">{p.full_name || p.email}</span>
+              <span className="text-zinc-800 dark:text-zinc-200">{personDisplayName(p)}</span>
             </label>
           ))}
         </div>

@@ -258,7 +258,7 @@ export interface AnnouncementItem {
   expires_at: string | null;
   author_id: string;
   department: { name: string } | null;
-  author: { full_name: string | null; email: string } | null;
+  author: { full_name: string | null; email: string; nickname: string | null } | null;
 }
 
 export async function getAnnouncements(departmentId?: string | null): Promise<AnnouncementItem[]> {
@@ -266,7 +266,7 @@ export async function getAnnouncements(departmentId?: string | null): Promise<An
   const nowIso = new Date().toISOString();
   let query = supabase
     .from("announcements")
-    .select("*, department:departments(name), author:profiles(full_name,email)")
+    .select("*, department:departments(name), author:profiles(full_name,email,nickname)")
     .lte("publish_at", nowIso)
     .or(`expires_at.is.null,expires_at.gt.${nowIso}`)
     .order("pinned", { ascending: false })
@@ -389,7 +389,7 @@ export async function getUpcomingBirthdays(days = 30): Promise<UpcomingBirthday[
   const supabase = await createClient();
   const { data } = await supabase
     .from("profiles")
-    .select("id,full_name,email,birthday_month,birthday_day")
+    .select("id,full_name,email,nickname,birthday_month,birthday_day")
     .not("birthday_month", "is", null)
     .not("birthday_day", "is", null);
 
@@ -404,7 +404,7 @@ export async function getUpcomingBirthdays(days = 30): Promise<UpcomingBirthday[
       let next = new Date(year, month - 1, day);
       if (next < today) next = new Date(year + 1, month - 1, day);
       const daysUntil = Math.round((next.getTime() - today.getTime()) / 86_400_000);
-      return { profileId: p.id, name: p.full_name || p.email, month, day, daysUntil };
+      return { profileId: p.id, name: p.nickname || p.full_name || p.email, month, day, daysUntil };
     })
     .filter((p) => p.daysUntil <= days)
     .sort((a, b) => a.daysUntil - b.daysUntil);
@@ -430,7 +430,7 @@ export async function getDocumentTemplates(): Promise<DocumentTemplateItem[]> {
   const serviceRole = createServiceRoleClient();
   const { data } = await supabase
     .from("document_templates")
-    .select("id,file_name,storage_path,created_at,uploader:profiles(full_name,email)")
+    .select("id,file_name,storage_path,created_at,uploader:profiles(full_name,email,nickname)")
     .order("created_at", { ascending: false });
 
   const rows = (data ?? []) as unknown as Array<{
@@ -438,7 +438,7 @@ export async function getDocumentTemplates(): Promise<DocumentTemplateItem[]> {
     file_name: string;
     storage_path: string;
     created_at: string;
-    uploader: { full_name: string | null; email: string } | null;
+    uploader: { full_name: string | null; email: string; nickname: string | null } | null;
   }>;
 
   return Promise.all(
@@ -451,7 +451,7 @@ export async function getDocumentTemplates(): Promise<DocumentTemplateItem[]> {
         fileName: row.file_name,
         storagePath: row.storage_path,
         createdAt: row.created_at,
-        uploadedBy: row.uploader?.full_name ?? row.uploader?.email ?? null,
+        uploadedBy: row.uploader?.nickname ?? row.uploader?.full_name ?? row.uploader?.email ?? null,
         downloadUrl: signed?.signedUrl ?? null,
       };
     })

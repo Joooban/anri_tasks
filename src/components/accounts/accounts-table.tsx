@@ -4,6 +4,7 @@ import { Fragment, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { updateAccount, assignAdminRole, removeUser, reactivateUser } from "@/app/(app)/accounts/actions";
 import { AdminActivityTrail } from "@/components/accounts/admin-activity-trail";
+import { personDisplayName } from "@/components/ui/person-label";
 import { ROLE_LABELS, type Profile, type Department, type Role } from "@/lib/types";
 import type { AdminRoleWithPermissions, AdminAuditEntry } from "@/lib/admin-queries";
 
@@ -55,7 +56,7 @@ function ManagePanel({
   }
 
   function remove() {
-    if (!window.confirm(`Remove ${profile.full_name || profile.email}? They'll lose sign-in access immediately.`)) return;
+    if (!window.confirm(`Remove ${personDisplayName(profile)}? They'll lose sign-in access immediately.`)) return;
     setRemoveError(null);
     startRemove(async () => {
       const result = await removeUser(profile.id);
@@ -239,7 +240,7 @@ export function AccountsTable({
                   <tr className="border-b border-zinc-100 last:border-0 dark:border-zinc-800">
                     <td className="px-3 py-2">
                       <p className="font-medium text-zinc-900 dark:text-zinc-50">
-                        {p.full_name || "—"}
+                        {p.nickname || p.full_name || "—"}
                         {p.deactivated_at && (
                           <span className="ml-1.5 text-[0.65rem] font-semibold uppercase tracking-wide text-red-500">
                             Removed
@@ -358,7 +359,7 @@ export function AccountsTable({
             >
               <div>
                 <p className="font-medium text-zinc-900 dark:text-zinc-50">
-                  {p.full_name || "—"}
+                  {p.nickname || p.full_name || "—"}
                   {p.deactivated_at && (
                     <span className="ml-1.5 text-[0.65rem] font-semibold uppercase tracking-wide text-red-500">
                       Removed

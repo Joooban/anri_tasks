@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { SignOutButton } from "@/components/nav/sign-out-button";
 import { ROLE_LABELS, type Role } from "@/lib/types";
@@ -28,14 +29,14 @@ export function TopBar({
       <div className="flex items-center gap-3">
         <ThemeToggle />
         <div className="flex items-center gap-2 border-l border-zinc-200 pl-3 dark:border-zinc-800">
-          <div className="text-right">
+          <Link href="/profile" className="text-right hover:opacity-70" title="My Profile">
             <p className="text-sm font-medium leading-tight text-zinc-900 dark:text-zinc-50">
               {fullName || email}
             </p>
             <p className="text-xs leading-tight text-zinc-500 dark:text-zinc-400">
               {ROLE_LABELS[role]}
             </p>
-          </div>
+          </Link>
           <SignOutButton className="rounded-lg px-2 py-1 text-xs font-medium text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-50" />
         </div>
       </div>

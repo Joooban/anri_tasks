@@ -79,7 +79,7 @@ export default async function HistoryPage({
   const { data: auditRows } = taskIds.length
     ? await serviceRole
         .from("audit_log")
-        .select("id,task_id,action,created_at,actor:profiles(full_name,email,department:departments(name))")
+        .select("id,task_id,action,created_at,actor:profiles(full_name,email,nickname,department:departments(name))")
         .in("task_id", taskIds)
         .order("created_at")
     : { data: [] };

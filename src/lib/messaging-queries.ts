@@ -5,6 +5,7 @@ export interface ConversationParticipant {
   id: string;
   full_name: string | null;
   email: string;
+  nickname: string | null;
 }
 
 export interface ConversationListItem {
@@ -29,7 +30,7 @@ export async function getConversations(): Promise<ConversationListItem[]> {
   const { data } = await supabase
     .from("conversations")
     .select(
-      "id,is_group,name,last_message_at,conversation_participants(profile_id,last_read_at,profile:profiles(id,full_name,email))"
+      "id,is_group,name,last_message_at,conversation_participants(profile_id,last_read_at,profile:profiles(id,full_name,email,nickname))"
     )
     .order("last_message_at", { ascending: false });
 
@@ -69,7 +70,7 @@ export async function getConversationMessages(conversationId: string): Promise<M
   const supabase = await createClient();
   const { data } = await supabase
     .from("messages")
-    .select("id,sender_id,body,created_at,sender:profiles(id,full_name,email)")
+    .select("id,sender_id,body,created_at,sender:profiles(id,full_name,email,nickname)")
     .eq("conversation_id", conversationId)
     .order("created_at", { ascending: true });
 

@@ -60,6 +60,7 @@ export interface Profile {
   id: string;
   email: string;
   full_name: string | null;
+  nickname: string | null;
   role: Role;
   department_id: string | null;
   avatar_url: string | null;

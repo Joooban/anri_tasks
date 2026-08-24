@@ -528,6 +528,7 @@ export type Database = {
           email: string
           full_name: string | null
           id: string
+          nickname: string | null
           role: string
         }
         Insert: {
@@ -541,6 +542,7 @@ export type Database = {
           email: string
           full_name?: string | null
           id: string
+          nickname?: string | null
           role?: string
         }
         Update: {
@@ -554,6 +556,7 @@ export type Database = {
           email?: string
           full_name?: string | null
           id?: string
+          nickname?: string | null
           role?: string
         }
         Relationships: [
@@ -1041,6 +1044,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      update_my_nickname_rpc: { Args: { p_nickname: string }; Returns: undefined }
     }
     Enums: {
       [_ in never]: never
