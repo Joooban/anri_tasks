@@ -1,5 +1,25 @@
 # ANRI Task Management System — Project Context
 
+## UI overhaul: brand color, sidebar icons, spacing pass (this session, no schema changes)
+
+Client feedback said "improve the UI" with no concrete direction, so this was brainstormed fresh rather than derived from a specific complaint, then the user picked all three ideas ("do 1-3"). Pure frontend/Tailwind — no migration, no `database.types.ts` change.
+
+**1. Brand color**: the "primary action" button/active-state class combination (`bg-zinc-900 ... text-white ... hover:bg-zinc-800 ... dark:bg-zinc-100 dark:text-zinc-900[...]`) turned out to be genuinely consistent across the whole app — confirmed via grep across ~23 files before touching anything, so a systematic swap was safe rather than guesswork. Added `--brand`/`--brand-hover` tokens to `globals.css`'s `@theme inline` block (gives `bg-brand`/`hover:bg-brand-hover`/etc. utilities the same way `--color-background` already does), sampled from the real logo gradient (`public/icons/icon.svg`) and darkened for WCAG-safe contrast with white text. Deliberately kept **identical in light and dark mode** rather than following the old zinc scheme's light/dark inversion — that inversion existed only as a generic "high-contrast chip" adaptation, not a deliberate brand choice, and a brand color should read the same in both themes. Swept into every one of those ~23 files (primary buttons, active nav/tab states, the message-bubble "mine" state, the announcement carousel dot).
+
+**2. Sidebar icons**: no icon library in the project (`package.json` has none), and eight glyphs didn't justify adding one — hand-wrote a small stroke-based SVG set in `src/components/nav/nav-icons.tsx` (Dashboard/Company/Tasks/Calendar/ActivityLog/Messages/Announcements/Accounts) instead. `Sidebar`'s `NAV_ITEMS` now carries an `icon: ComponentType` per entry.
+
+**3. Spacing/density pass**: audited page-container and card padding conventions across the app first (`Card` is `p-4` everywhere via the shared component; page containers are `flex flex-col gap-4` everywhere except the task detail page's deliberate `gap-6` for its more complex section stack) — found the codebase already internally consistent, not actually inconsistent, so a blind sweep would have just been churn. Also weighed against a real, conflicting earlier signal: the client called the dashboard "so empty," which argues against blanket-adding whitespace. Made one proportionate, additive, low-risk change instead: `AppShell`'s main content padding gained an `lg:p-8` step (was capped at `sm:p-6`) for more breathing room on wide desktop monitors, where this internal tool is mostly used.
+
+**Verification**: `tsc`/`eslint`/`npm run build` all clean. **Not yet done**: any visual check — this session has no screenshot/browser tooling, so the color/icon/spacing result needs a sanity-check pass once deployed, especially the new gold's contrast and the hand-drawn icons at actual sidebar size.
+
+## Branding: real ANRI logo + letter template (this session, no schema changes beyond a storage upload)
+
+User dropped `logo.jpg` (the Arc Nickel Resources Inc. logo) and `ANRI LETTER TEMPLATE 2026.docx` into the project root and asked to have them "arranged" into the actual app rather than left as loose files.
+
+- `public/anri-logo.jpg` — used in the Sidebar header (replacing the app name as plain text), the login page (above the sign-in heading), and `/auth/auth-error`.
+- `public/icons/icon.svg` — the generic dark-square "A" placeholder favicon replaced with a simplified three-peak mountain mark using a gradient approximating the logo's real gold tones, legible at small favicon sizes without being a literal reproduction.
+- The letter template was uploaded straight into the existing `document_templates` feature (Company Overview → official document templates) via a one-off script using the service-role client — the same storage bucket + table the real `uploadDocumentTemplate` Server Action writes to, so it shows up exactly like a template an admin uploaded through the UI. The script and the loose root-level copies of both files were deleted after the upload succeeded; nothing extra left in the repo root.
+
 ## Self-service nicknames (this session, migration 0034)
 
 User's ask: some employees sign in with a personal Google account whose display name isn't their real/preferred name — let them set their own nickname. First self-service profile field since `profiles_update_self` was dropped in `0019` (it let anyone grant themselves `boss_boss`) — `update_my_nickname_rpc` only ever touches the caller's own `nickname` column, so it can't reopen that hole.

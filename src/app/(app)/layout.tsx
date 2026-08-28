@@ -29,7 +29,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
           You&apos;re signed in as {profile.email}, but your department and role haven&apos;t
           been assigned yet. Contact the Resident Manager to finish setting up your account.
         </p>
-        <SignOutButton className="rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200" />
+        <SignOutButton className="rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-hover dark:bg-brand dark:text-white dark:hover:bg-brand-hover" />
       </div>
     );
   }

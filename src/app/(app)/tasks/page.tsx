@@ -48,7 +48,7 @@ export default async function TasksPage({
         {canCreate && (
           <Link
             href="/tasks/new"
-            className="rounded-lg bg-zinc-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
+            className="rounded-lg bg-brand px-3 py-1.5 text-sm font-medium text-white hover:bg-brand-hover dark:bg-brand dark:text-white dark:hover:bg-brand-hover"
           >
             + New Task
           </Link>
@@ -67,7 +67,7 @@ export default async function TasksPage({
               className={clsx(
                 "rounded-full px-3 py-1 text-xs font-medium",
                 (status ?? "all") === s
-                  ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900"
+                  ? "bg-brand text-white dark:bg-brand dark:text-white"
                   : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
               )}
             >

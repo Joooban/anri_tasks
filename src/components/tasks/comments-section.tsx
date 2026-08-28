@@ -62,7 +62,7 @@ export function CommentsSection({ taskId, comments }: { taskId: string; comments
         <button
           disabled={pending || !value.trim()}
           onClick={submit}
-          className="self-end rounded-lg bg-zinc-900 px-3 py-2 text-xs font-medium text-white hover:bg-zinc-800 disabled:opacity-60 dark:bg-zinc-100 dark:text-zinc-900"
+          className="self-end rounded-lg bg-brand px-3 py-2 text-xs font-medium text-white hover:bg-brand-hover disabled:opacity-60 dark:bg-brand dark:text-white"
         >
           Post
         </button>

@@ -78,7 +78,7 @@ function RoleForm({ initial, onDone }: { initial?: AdminRoleWithPermissions; onD
         <button
           onClick={submit}
           disabled={pending || !name.trim()}
-          className="rounded-lg bg-zinc-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-zinc-800 disabled:opacity-60 dark:bg-zinc-100 dark:text-zinc-900"
+          className="rounded-lg bg-brand px-3 py-1.5 text-xs font-medium text-white hover:bg-brand-hover disabled:opacity-60 dark:bg-brand dark:text-white"
         >
           {pending ? "Saving…" : initial ? "Save" : "Create role"}
         </button>

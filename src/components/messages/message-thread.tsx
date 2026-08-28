@@ -91,7 +91,7 @@ export function MessageThread({
                 <div
                   className={`max-w-[80%] rounded-lg px-3 py-1.5 text-sm ${
                     mine
-                      ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900"
+                      ? "bg-brand text-white dark:bg-brand dark:text-white"
                       : "bg-zinc-100 text-zinc-800 dark:bg-zinc-800 dark:text-zinc-200"
                   }`}
                 >
@@ -127,7 +127,7 @@ export function MessageThread({
         <button
           disabled={pending || !value.trim()}
           onClick={submit}
-          className="self-end rounded-lg bg-zinc-900 px-3 py-2 text-xs font-medium text-white hover:bg-zinc-800 disabled:opacity-60 dark:bg-zinc-100 dark:text-zinc-900"
+          className="self-end rounded-lg bg-brand px-3 py-2 text-xs font-medium text-white hover:bg-brand-hover disabled:opacity-60 dark:bg-brand dark:text-white"
         >
           Send
         </button>

@@ -67,7 +67,7 @@ function EditAnnouncementForm({ item, onDone }: { item: AnnouncementItem; onDone
         <button
           type="submit"
           disabled={pending}
-          className="rounded-lg bg-zinc-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-zinc-800 disabled:opacity-60 dark:bg-zinc-100 dark:text-zinc-900"
+          className="rounded-lg bg-brand px-3 py-1.5 text-xs font-medium text-white hover:bg-brand-hover disabled:opacity-60 dark:bg-brand dark:text-white"
         >
           {pending ? "Saving…" : "Save"}
         </button>
@@ -219,7 +219,7 @@ export function AnnouncementsFeed({
                   aria-label={`Show announcement ${i + 1}`}
                   className={`h-1.5 w-1.5 rounded-full ${
                     i === Math.min(index, items.length - 1)
-                      ? "bg-zinc-900 dark:bg-zinc-100"
+                      ? "bg-brand dark:bg-brand"
                       : "bg-zinc-300 dark:bg-zinc-700"
                   }`}
                 />

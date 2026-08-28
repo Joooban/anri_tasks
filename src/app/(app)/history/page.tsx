@@ -164,7 +164,7 @@ export default async function HistoryPage({
 
         <button
           type="submit"
-          className="flex h-8 items-center rounded-md bg-zinc-900 px-3 text-xs font-medium text-white hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
+          className="flex h-8 items-center rounded-md bg-brand px-3 text-xs font-medium text-white hover:bg-brand-hover dark:bg-brand dark:text-white dark:hover:bg-brand-hover"
         >
           Filter
         </button>

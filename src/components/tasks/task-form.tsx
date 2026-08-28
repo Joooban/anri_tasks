@@ -133,7 +133,7 @@ export function TaskForm({
       <button
         type="submit"
         disabled={pending}
-        className="self-start rounded-lg bg-zinc-900 px-5 py-2 text-sm font-medium text-white hover:bg-zinc-800 disabled:opacity-60 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
+        className="self-start rounded-lg bg-brand px-5 py-2 text-sm font-medium text-white hover:bg-brand-hover disabled:opacity-60 dark:bg-brand dark:text-white dark:hover:bg-brand-hover"
       >
         {pending ? "Creating…" : "Create Task"}
       </button>

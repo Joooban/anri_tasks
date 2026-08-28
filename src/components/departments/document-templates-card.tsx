@@ -76,7 +76,7 @@ export function DocumentTemplatesCard({
           <button
             type="submit"
             disabled={pending}
-            className="shrink-0 rounded-lg bg-zinc-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-zinc-800 disabled:opacity-60 dark:bg-zinc-100 dark:text-zinc-900"
+            className="shrink-0 rounded-lg bg-brand px-3 py-1.5 text-xs font-medium text-white hover:bg-brand-hover disabled:opacity-60 dark:bg-brand dark:text-white"
           >
             {pending ? "Uploading…" : "Upload"}
           </button>

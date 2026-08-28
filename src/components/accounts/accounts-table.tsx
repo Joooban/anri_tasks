@@ -97,7 +97,7 @@ function ManagePanel({
           <button
             disabled={assigning || adminRoleId === (profile.admin_role_id ?? "")}
             onClick={assign}
-            className="rounded-lg bg-zinc-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-zinc-800 disabled:opacity-40 dark:bg-zinc-100 dark:text-zinc-900"
+            className="rounded-lg bg-brand px-3 py-1.5 text-xs font-medium text-white hover:bg-brand-hover disabled:opacity-40 dark:bg-brand dark:text-white"
           >
             {assigning ? "Saving…" : "Assign"}
           </button>
@@ -311,7 +311,7 @@ export function AccountsTable({
                       <button
                         disabled={!dirty || pending}
                         onClick={() => save(p.id)}
-                        className="rounded-lg bg-zinc-900 px-3 py-1 text-xs font-medium text-white hover:bg-zinc-800 disabled:opacity-40 dark:bg-zinc-100 dark:text-zinc-900"
+                        className="rounded-lg bg-brand px-3 py-1 text-xs font-medium text-white hover:bg-brand-hover disabled:opacity-40 dark:bg-brand dark:text-white"
                       >
                         {savingId === p.id ? "Saving…" : "Save"}
                       </button>
@@ -441,7 +441,7 @@ export function AccountsTable({
                 <button
                   disabled={!dirty || pending}
                   onClick={() => save(p.id)}
-                  className="rounded-lg bg-zinc-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-zinc-800 disabled:opacity-40 dark:bg-zinc-100 dark:text-zinc-900"
+                  className="rounded-lg bg-brand px-3 py-1.5 text-xs font-medium text-white hover:bg-brand-hover disabled:opacity-40 dark:bg-brand dark:text-white"
                 >
                   {savingId === p.id ? "Saving…" : "Save"}
                 </button>

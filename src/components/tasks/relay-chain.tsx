@@ -216,7 +216,7 @@ function StepRow({
           <button
             disabled={pending}
             onClick={() => run(() => unblockStep(taskId, step.id))}
-            className="rounded-lg bg-zinc-900 px-3 py-1 text-xs font-medium text-white hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900"
+            className="rounded-lg bg-brand px-3 py-1 text-xs font-medium text-white hover:bg-brand-hover dark:bg-brand dark:text-white"
           >
             Resume (unblock)
           </button>

@@ -46,7 +46,7 @@ export function PreviewSwitcher({ departments }: { departments: Department[] }) 
       <div className="flex gap-1.5">
         <button
           type="submit"
-          className="rounded-lg bg-zinc-900 px-2.5 py-1 text-xs font-medium text-white hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900"
+          className="rounded-lg bg-brand px-2.5 py-1 text-xs font-medium text-white hover:bg-brand-hover dark:bg-brand dark:text-white"
         >
           Go
         </button>

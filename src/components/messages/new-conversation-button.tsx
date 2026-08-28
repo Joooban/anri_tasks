@@ -47,7 +47,7 @@ export function NewConversationButton({ people }: { people: Profile[] }) {
     return (
       <button
         onClick={() => setOpen(true)}
-        className="rounded-lg bg-zinc-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
+        className="rounded-lg bg-brand px-3 py-1.5 text-sm font-medium text-white hover:bg-brand-hover dark:bg-brand dark:text-white dark:hover:bg-brand-hover"
       >
         + New message
       </button>
@@ -86,7 +86,7 @@ export function NewConversationButton({ people }: { people: Profile[] }) {
           <button
             disabled={pending}
             onClick={start}
-            className="rounded-lg bg-zinc-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-zinc-800 disabled:opacity-60 dark:bg-zinc-100 dark:text-zinc-900"
+            className="rounded-lg bg-brand px-3 py-1.5 text-xs font-medium text-white hover:bg-brand-hover disabled:opacity-60 dark:bg-brand dark:text-white"
           >
             {pending ? "Starting…" : "Start"}
           </button>

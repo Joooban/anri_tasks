@@ -23,7 +23,7 @@ export default async function AuthErrorPage({
       <p className="max-w-sm text-sm text-zinc-500 dark:text-zinc-400">{message}</p>
       <Link
         href="/login"
-        className="rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
+        className="rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-hover dark:bg-brand dark:text-white dark:hover:bg-brand-hover"
       >
         Back to sign in
       </Link>

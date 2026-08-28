@@ -86,7 +86,7 @@ export function AppShell({
           <PreviewBanner role={previewInfo.role} departmentName={previewInfo.departmentName} />
         )}
         <TopBar fullName={fullName} email={email} role={topBarRole} onMenuClick={() => setMobileOpen(true)} />
-        <main className="flex-1 overflow-y-auto p-4 sm:p-6">{children}</main>
+        <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">{children}</main>
       </div>
     </div>
   );
