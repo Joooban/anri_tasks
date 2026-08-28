@@ -45,9 +45,17 @@ export function Sidebar({
   return (
     <nav className="flex h-full w-52 shrink-0 flex-col border-r border-zinc-200 bg-white px-3 py-4 dark:border-zinc-800 dark:bg-zinc-950">
       <div className="mb-6 px-3">
-        <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">ANRI Tasks</p>
+        {/* logo.jpg has a white, non-transparent background — a plain white
+            card here keeps it looking intentional in dark mode instead of
+            a stray white box floating on the dark sidebar. */}
+        <div className="overflow-hidden rounded-lg border border-zinc-200 bg-white dark:border-zinc-800">
+          {/* eslint-disable-next-line @next/next/no-img-element -- static
+              brand asset, no responsive/remote-loader needs that would
+              justify next/image here */}
+          <img src="/anri-logo.jpg" alt="Arc Nickel Resources Inc." className="block w-full" />
+        </div>
         {departmentName && (
-          <p className="mt-0.5 truncate text-xs text-zinc-500 dark:text-zinc-400">{departmentName}</p>
+          <p className="mt-2 truncate text-xs text-zinc-500 dark:text-zinc-400">{departmentName}</p>
         )}
       </div>
 
