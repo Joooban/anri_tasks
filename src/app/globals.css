@@ -77,6 +77,14 @@ button:disabled {
   cursor: not-allowed;
 }
 
+/* Brand-colored keyboard focus ring, applied last so it wins over any
+   browser/UA default outline — a small, universal touch that reinforces the
+   brand color on every interactive element without editing each one. */
+:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 1px;
+}
+
 /* FullCalendar's dayGrid view sometimes assigns an event the "block"
    (fc-h-event, full-width, background-filled) class instead of
    "list-item" (compact dot) even with eventDisplay: "list-item"

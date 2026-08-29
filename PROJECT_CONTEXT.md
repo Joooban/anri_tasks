@@ -1,5 +1,17 @@
 # ANRI Task Management System — Project Context
 
+## Dashboard polish pass (this session, no schema changes)
+
+User shared a live screenshot of Company Overview and asked for a UI brainstorm; picked "continue with everything raised" but explicitly keep the visible test data (`test`, `asd`, etc.) in place rather than clean it up.
+
+- **"Needs attention" now color-codes by reason.** `TaskMiniList`'s `meta` string was plain gray text regardless of whether a task was overdue, blocked, or just due soon — the app already had a `Badge` component and used colored badges for task step statuses, just not here. Added an optional `metaBadgeClassName` to `MiniItem`, and a new `NEEDS_ATTENTION_BADGE` map in `constants.ts` (red for overdue/blocked, amber for due soon) wired in on both the company-wide dashboard and the per-department dashboard's "Needs attention" widget.
+- **Department cards now carry health as a border + tint, not just a corner dot.** A single-color dot on a 14-card grid is easy to miss scanning quickly. New `HEALTH_CARD_STYLES` map in `constants.ts` adds a colored left border + faint background tint for yellow/red departments (green stays the plain default border) — applied to both `DepartmentTiles` (dashboard widget) and the Company Overview page's own department grid. The dot stays too; this is additional redundant encoding, not a replacement.
+- **Completion-rate stats gained a thin progress bar** under each percentage (today/week/month/all-time), colored red/amber/emerald by rate — the card previously left visible empty space under the text-only stats.
+- **Brand gold now shows up on secondary interactions, not just primary buttons.** Department card hover borders switched from generic zinc to `hover:border-brand`, and a global `:focus-visible` outline in `globals.css` uses the brand color — a small, universal touch (every focusable element, not just ones edited individually) that also reinforces keyboard-accessibility styling.
+- **Announcements empty state got a small icon** instead of being bare gray text, matching the sidebar's icon language.
+
+**Verification**: `tsc`/`eslint`/`npm run build` clean. **Not yet done**: visual check — same caveat as the prior UI pass, no screenshot tooling in this environment, so contrast/legibility of the new tints and progress-bar colors need a live look.
+
 ## UI overhaul: brand color, sidebar icons, spacing pass (this session, no schema changes)
 
 Client feedback said "improve the UI" with no concrete direction, so this was brainstormed fresh rather than derived from a specific complaint, then the user picked all three ideas ("do 1-3"). Pure frontend/Tailwind — no migration, no `database.types.ts` change.

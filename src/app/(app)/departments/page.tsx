@@ -11,7 +11,7 @@ import {
   getDocumentTemplates,
   type TrendBucket,
 } from "@/lib/dashboard-queries";
-import { HEALTH_COLORS } from "@/lib/constants";
+import { HEALTH_COLORS, HEALTH_CARD_STYLES } from "@/lib/constants";
 import { Card, CardTitle } from "@/components/ui/card";
 import { CompletionTrendChart } from "@/components/dashboard/completion-trend-chart";
 import { UpcomingBirthdaysCard } from "@/components/departments/upcoming-birthdays-card";
@@ -57,7 +57,10 @@ export default async function DepartmentsPage({
           <Link
             key={item.department.id}
             href={`/departments/${item.department.slug}`}
-            className="flex flex-col gap-1 rounded-xl border border-zinc-200 bg-white p-4 hover:border-zinc-300 hover:shadow-sm dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-zinc-700"
+            className={clsx(
+              "flex flex-col gap-1 rounded-xl border bg-white p-4 hover:border-brand hover:shadow-sm dark:bg-zinc-900 dark:hover:border-brand",
+              HEALTH_CARD_STYLES[item.health]
+            )}
           >
             <div className="flex items-center justify-between">
               <span className="text-sm font-medium text-zinc-900 dark:text-zinc-50">

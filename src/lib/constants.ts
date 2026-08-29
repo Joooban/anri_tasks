@@ -64,3 +64,23 @@ export const HEALTH_COLORS = {
 } as const;
 
 export type HealthStatus = keyof typeof HEALTH_COLORS;
+
+// Left-border + faint background tint for department cards — the status dot
+// alone is easy to miss scanning a grid of 14 cards; this makes a troubled
+// department readable at a glance without reading any text. Green stays
+// unstyled (the default card border) so healthy departments don't compete
+// for attention.
+export const HEALTH_CARD_STYLES: Record<HealthStatus, string> = {
+  green: "border-zinc-200 dark:border-zinc-800",
+  yellow: "border-l-4 border-l-amber-400 border-zinc-200 bg-amber-50/40 dark:border-l-amber-500 dark:border-zinc-800 dark:bg-amber-950/10",
+  red: "border-l-4 border-l-red-400 border-zinc-200 bg-red-50/40 dark:border-l-red-500 dark:border-zinc-800 dark:bg-red-950/10",
+};
+
+// Same reasons NeedsAttentionTask can carry (dashboard-queries.ts) — colored
+// so "Needs attention" reads at a glance instead of requiring each line to
+// be read, matching the badge language already used on task step statuses.
+export const NEEDS_ATTENTION_BADGE: Record<"overdue" | "blocked" | "due_soon", string> = {
+  overdue: "bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300",
+  blocked: "bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300",
+  due_soon: "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300",
+};

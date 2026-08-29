@@ -1,6 +1,7 @@
 import Link from "next/link";
+import clsx from "clsx";
 import { Card, CardTitle } from "@/components/ui/card";
-import { HEALTH_COLORS } from "@/lib/constants";
+import { HEALTH_COLORS, HEALTH_CARD_STYLES } from "@/lib/constants";
 import type { DepartmentHealth } from "@/lib/dashboard-queries";
 
 export function DepartmentTiles({ items }: { items: DepartmentHealth[] }) {
@@ -12,7 +13,10 @@ export function DepartmentTiles({ items }: { items: DepartmentHealth[] }) {
           <Link
             key={item.department.id}
             href={`/departments/${item.department.slug}`}
-            className="flex flex-col gap-1 rounded-xl border border-zinc-200 p-3 hover:border-zinc-300 hover:shadow-sm dark:border-zinc-800 dark:hover:border-zinc-700"
+            className={clsx(
+              "flex flex-col gap-1 rounded-xl border p-3 hover:border-brand hover:shadow-sm dark:hover:border-brand",
+              HEALTH_CARD_STYLES[item.health]
+            )}
           >
             <div className="flex items-center justify-between">
               <span className="text-sm font-medium text-zinc-900 dark:text-zinc-50">

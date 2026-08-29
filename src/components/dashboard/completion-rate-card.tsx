@@ -74,6 +74,13 @@ export function CompletionRateCard({
   );
 }
 
+function statBarColor(percent: number, total: number): string {
+  if (total === 0) return "bg-zinc-200 dark:bg-zinc-700";
+  if (percent >= 70) return "bg-emerald-500";
+  if (percent >= 40) return "bg-amber-500";
+  return "bg-red-500";
+}
+
 function Stat({ label, rate, trend }: { label: string; rate: CompletionRate; trend?: number | null }) {
   return (
     <div>
@@ -88,6 +95,12 @@ function Stat({ label, rate, trend }: { label: string; rate: CompletionRate; tre
           </span>
         )}
       </p>
+      <div className="mt-1.5 h-1 w-full overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-800">
+        <div
+          className={`h-full rounded-full ${statBarColor(rate.percent, rate.total)}`}
+          style={{ width: `${rate.total === 0 ? 0 : rate.percent}%` }}
+        />
+      </div>
     </div>
   );
 }

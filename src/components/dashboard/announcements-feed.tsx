@@ -167,7 +167,14 @@ export function AnnouncementsFeed({
       </div>
 
       {!current ? (
-        <p className="text-sm text-zinc-500 dark:text-zinc-400">No announcements yet.</p>
+        <div className="flex flex-col items-center gap-2 py-6 text-center">
+          <svg viewBox="0 0 20 20" width="28" height="28" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" className="text-zinc-300 dark:text-zinc-700" aria-hidden="true">
+            <path d="M3 8.5v3l3 .6v3.4a1.3 1.3 0 0 0 2.6 0v-2.9" />
+            <path d="M6 8.5l9.5-4v12l-9.5-4z" />
+            <path d="M15.5 8v5" />
+          </svg>
+          <p className="text-sm text-zinc-500 dark:text-zinc-400">No announcements yet.</p>
+        </div>
       ) : (
         <>
           {(() => {

@@ -11,6 +11,7 @@ import { TaskMiniList } from "@/components/dashboard/task-mini-list";
 import { AnnouncementsFeed } from "@/components/dashboard/announcements-feed";
 import { Card, CardTitle, EmptyState } from "@/components/ui/card";
 import { formatDate, formatDateTime } from "@/lib/format-datetime";
+import { NEEDS_ATTENTION_BADGE } from "@/lib/constants";
 
 export async function DepartmentDashboard({
   departmentId,
@@ -101,6 +102,7 @@ export async function DepartmentDashboard({
                   : t.deadline
                     ? `Due ${formatDate(t.deadline, { month: "short", day: "numeric" })}`
                     : "",
+            metaBadgeClassName: NEEDS_ATTENTION_BADGE[t.reason],
           }))}
         />
 

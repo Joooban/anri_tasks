@@ -16,6 +16,7 @@ import {
   getAnnouncements,
 } from "@/lib/dashboard-queries";
 import { createClient } from "@/lib/supabase/server";
+import { NEEDS_ATTENTION_BADGE } from "@/lib/constants";
 import { CompletionRateCard } from "@/components/dashboard/completion-rate-card";
 import { DepartmentTiles } from "@/components/dashboard/department-tiles";
 import { TaskMiniList } from "@/components/dashboard/task-mini-list";
@@ -109,6 +110,7 @@ export default async function DashboardPage() {
                   : t.deadline
                     ? `Due ${formatDate(t.deadline, { month: "short", day: "numeric" })}`
                     : "",
+            metaBadgeClassName: NEEDS_ATTENTION_BADGE[t.reason],
           }))}
         />
       ),
