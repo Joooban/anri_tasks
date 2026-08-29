@@ -47,6 +47,21 @@ export async function getPendingApprovalRequests(): Promise<PendingApprovalItem[
   return (data ?? []) as unknown as PendingApprovalItem[];
 }
 
+// Count-only variant of getPendingApprovalRequests, for the sidebar badge —
+// avoids pulling every request's target/requester names just to show a
+// number. Same RLS scoping (admin_approval_requests_select, is_any_admin());
+// callers should still gate on the approve_admin_requests permission
+// specifically before showing this, since seeing a count isn't the same as
+// being able to act on it.
+export async function getPendingApprovalCount(): Promise<number> {
+  const supabase = await createClient();
+  const { count } = await supabase
+    .from("admin_approval_requests")
+    .select("id", { count: "exact", head: true })
+    .eq("status", "pending");
+  return count ?? 0;
+}
+
 export interface AdminAuditEntry {
   id: string;
   action: string;

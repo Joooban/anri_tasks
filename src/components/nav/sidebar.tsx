@@ -43,6 +43,7 @@ export function Sidebar({
   departments,
   canAccessAdmin,
   unreadMessageCount,
+  pendingApprovalCount,
 }: {
   role: Role;
   departmentName: string | null;
@@ -51,6 +52,7 @@ export function Sidebar({
   departments: Department[];
   canAccessAdmin: boolean;
   unreadMessageCount: number;
+  pendingApprovalCount: number;
 }) {
   const pathname = usePathname();
 
@@ -93,6 +95,14 @@ export function Sidebar({
                 {item.href === "/messages" && unreadMessageCount > 0 && (
                   <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-blue-600 px-1 text-[0.65rem] font-semibold text-white">
                     {unreadMessageCount > 9 ? "9+" : unreadMessageCount}
+                  </span>
+                )}
+                {/* Amber rather than the Messages badge's blue — this one
+                    means "needs your action" (a pending admin-role grant
+                    awaiting a second approver), not just "unread." */}
+                {item.href === "/accounts" && pendingApprovalCount > 0 && (
+                  <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-amber-500 px-1 text-[0.65rem] font-semibold text-white">
+                    {pendingApprovalCount > 9 ? "9+" : pendingApprovalCount}
                   </span>
                 )}
               </Link>

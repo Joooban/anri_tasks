@@ -4,7 +4,8 @@ import { getCurrentProfile } from "@/lib/get-current-profile";
 import { getPreview } from "@/lib/get-preview";
 import { getDepartments } from "@/lib/queries";
 import { getUnreadMessageCount } from "@/lib/messaging-queries";
-import { createClient } from "@/lib/supabase/server";
+import { getMyPermissions, hasAnyPermission } from "@/lib/get-permissions";
+import { getPendingApprovalCount } from "@/lib/admin-queries";
 import { AppShell } from "@/components/nav/app-shell";
 import { SignOutButton } from "@/components/nav/sign-out-button";
 
@@ -42,11 +43,16 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
   // Gates the Company Overview / Accounts nav links — true for
   // boss_boss/supervisor (as before) and now also for anyone holding a
   // custom Admin role with at least one permission (0027_admin_roles_and_permissions.sql).
-  const supabase = await createClient();
-  const [{ data: canAccessAdmin }, unreadMessageCount] = await Promise.all([
-    supabase.rpc("is_any_admin"),
+  const [permissions, unreadMessageCount] = await Promise.all([
+    getMyPermissions(),
     getUnreadMessageCount(),
   ]);
+  const canAccessAdmin = hasAnyPermission(permissions);
+  // Only counted for accounts that can actually act on a request — seeing a
+  // number you can't do anything about would just be confusing, not useful.
+  const pendingApprovalCount = permissions.has("approve_admin_requests")
+    ? await getPendingApprovalCount()
+    : 0;
 
   // What the Sidebar renders is driven by the effective (possibly
   // previewed) role/department. Real identity — used for auth, RLS, and
@@ -66,8 +72,9 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
       email={profile.email}
       topBarRole={profile.role}
       previewInfo={preview && previewDepartment ? { role: preview.role, departmentName: previewDepartment.name } : null}
-      canAccessAdmin={canAccessAdmin ?? false}
+      canAccessAdmin={canAccessAdmin}
       unreadMessageCount={unreadMessageCount}
+      pendingApprovalCount={pendingApprovalCount}
     >
       {children}
     </AppShell>

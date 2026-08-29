@@ -1,5 +1,15 @@
 # ANRI Task Management System — Project Context
 
+## Pending-approval badge on the Accounts nav item (this session, no schema changes)
+
+User asked for a notification on Accounts when there's an admin-role grant awaiting their approval — same idea as the existing Messages unread badge, which already existed as a pattern to copy.
+
+`AppLayout` now calls `getMyPermissions()` directly (replacing a separate `is_any_admin()` RPC call — `canAccessAdmin` is just `hasAnyPermission(permissions)`, so this is also a small simplification, one fewer round trip) and, only when the caller actually holds `approve_admin_requests`, fetches a new count-only query (`getPendingApprovalCount()`, `admin-queries.ts`) and threads it through `AppShell` → `Sidebar` as `pendingApprovalCount`. Deliberately gated on the specific permission rather than `is_any_admin()` — an Admin who can only manage task types, say, has no way to act on an approval request, so showing them a count would just be confusing.
+
+Rendered as an amber badge (`Sidebar`), not the Messages badge's blue — amber reads as "needs your action," consistent with the amber "Pending approval"/"Needs focus" language already used elsewhere in Accounts and the dashboard, distinct from "you have unread info."
+
+**Verification**: `tsc`/`eslint`/`npm run build` clean. Existing `admin_approval_requests_select` RLS (`is_any_admin()`) already scopes the count query correctly — no new access-control surface.
+
 ## Calendar coloring: by current holder, not creator; President gets its own legend color (this session, no schema changes)
 
 User reported real confusion from a live screenshot: a task he'd created and assigned to a department showed as the calendar's gray "Unassigned" color, even though its assignee chain clearly had an active department step. Root cause: `taskCalendarColor()` was always colored by `tasks.creator_department_id` — the department of whoever *created* the task — not who it's currently assigned to. Since the President (`boss_boss`) isn't tied to any department, every task he personally creates had `creator_department_id = null` regardless of which department the chain was actually running through.

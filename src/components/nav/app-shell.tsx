@@ -24,6 +24,7 @@ export function AppShell({
   previewInfo,
   canAccessAdmin,
   unreadMessageCount,
+  pendingApprovalCount,
   children,
 }: {
   role: Role;
@@ -37,6 +38,7 @@ export function AppShell({
   previewInfo: { role: Role; departmentName: string } | null;
   canAccessAdmin: boolean;
   unreadMessageCount: number;
+  pendingApprovalCount: number;
   children: ReactNode;
 }) {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -78,6 +80,7 @@ export function AppShell({
           departments={departments}
           canAccessAdmin={canAccessAdmin}
           unreadMessageCount={unreadMessageCount}
+          pendingApprovalCount={pendingApprovalCount}
         />
       </div>
 
