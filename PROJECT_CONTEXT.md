@@ -296,14 +296,14 @@ Everything through this session (delete-task-button, announcement edit/delete, c
 
 ## Known gaps / not yet done
 
-- Both `SUPABASE_SERVICE_ROLE_KEY` and `ENCRYPTION_KEY` are now set in Vercel (server-only, not `NEXT_PUBLIC_`) as well as local `.env.local`. **`ENCRYPTION_KEY` still needs a durable backup outside both of those** (a password manager) — if it's lost, every encrypted row becomes permanently unreadable with no recovery path. Not yet confirmed done.
-- All migrations `0001`–`0022` confirmed applied to the Supabase project this deployment uses, including `0022` (email allowlist) — initially missed when deployment happened (built but never handed to the client to run), caught when production sign-in failed closed with "not approved yet" for every account. Lesson: a migration existing in the repo isn't the same as it being run — this class of bug has now happened three times this project (see the "migrations are not auto-applied" gotcha above), reinforcing that this is the single highest-value thing for the SOP to formalize.
-- Onboarding still needs each new person's email added to the allowlist before their first sign-in attempt (see Deployment section) — not yet done for the actual team, deferred by the client for now.
-- Org chart sub-units unseeded (blocked on client input, not a code issue).
-- Task type management is still SQL-editable only, no admin UI.
-- No generated TypeScript types from the database (`supabase gen types typescript` never run) — types are hand-maintained in `src/lib/types.ts`.
-- Migrations `0023`–`0026` (task-status fix, dashboard widget cleanup, profile birthday columns, document templates) confirmed applied to production — see the client-feedback-batch section above.
-- Custom/self-defined admin roles & permissions: deliberately not started, no scope decision made yet. (Task-sharing via link was resolved this session — see its own section above; scoped internal-only, no allowlist changes.)
+This list drifted badly out of date at one point — several items below (CSP, task-type admin UI, generated DB types, admin roles) were left marked "not done" long after they'd actually shipped, each with its own dedicated section above. Whoever edits this file next: when a gap gets resolved, delete the bullet here immediately rather than leaving it for a later pass — it does not get reliably caught later.
+
+- **`ENCRYPTION_KEY` has no durable backup outside Vercel/`.env.local`** — if lost, every encrypted row (task titles, comments, announcements, messages) becomes permanently unreadable with no recovery path. Explicitly left as-is for now per the client ("stays as we are still developing it") — revisit once the app is closer to a stable, less-actively-changing state, not before.
+- **The Supabase personal access token generated for the admin-roles-work backup and database inspection this session was never confirmed revoked.** It's account-wide, not project-scoped — worth checking supabase.com/dashboard/account/tokens.
+- **Team onboarding**: real employees' emails still need adding to the allowlist before they can sign in. In progress / deferred by the client while testing continues — not a code gap.
+- **Org chart sub-units unseeded** — blocked on client input, not a code issue.
+- **The two-admin approval flow (sensitive admin-role grants) has been built but not yet click-tested end-to-end** with two real distinct logged-in accounts — needs someone to actually play both the requester and the approver. Test steps are in this session's conversation history if picking this up fresh.
+- **CSP is enforcing, not report-only** — `Content-Security-Policy` (not `-Report-Only`) has been live since it shipped, has run under every feature built since with no reported breakage, but was never deliberately soak-tested in report-only mode first. Worth keeping in mind if something ever renders oddly with no visible error — check the browser console for CSP violations before assuming it's something else.
 
 ## For the SOP itself
 
