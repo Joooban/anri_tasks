@@ -2,10 +2,10 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   // Security review finding: no HTTP security headers were set at all.
-  // These four are safe, well-understood defaults that can't break the
-  // app (unlike a Content-Security-Policy, which needs careful testing
-  // against Google OAuth, Supabase, FullCalendar, and the service worker
-  // before shipping — left as a follow-up rather than guessed at blind).
+  // These four are safe, well-understood defaults. Content-Security-Policy
+  // is handled separately, per-request, in src/lib/supabase/middleware.ts
+  // (needs a fresh nonce every request, which a static header here can't
+  // provide) — see that file for the actual policy.
   async headers() {
     return [
       {
