@@ -1,5 +1,15 @@
 # ANRI Task Management System — Project Context
 
+## Calendar coloring: by current holder, not creator; President gets its own legend color (this session, no schema changes)
+
+User reported real confusion from a live screenshot: a task he'd created and assigned to a department showed as the calendar's gray "Unassigned" color, even though its assignee chain clearly had an active department step. Root cause: `taskCalendarColor()` was always colored by `tasks.creator_department_id` — the department of whoever *created* the task — not who it's currently assigned to. Since the President (`boss_boss`) isn't tied to any department, every task he personally creates had `creator_department_id = null` regardless of which department the chain was actually running through.
+
+**Fix**: `calendar/page.tsx` now queries `task_assignees` for each task's one non-terminal step (`status in (active, pending_approval, blocked)`) and colors/labels by *that* — resolving through the assignee's own department if it's a department-type step, or the assignee's profile's department if it's an individual-type step. Falls back to `creator_department_id` only for tasks with no live step (i.e. already done, where the dot color is overridden to neutral gray anyway regardless).
+
+**Follow-up ask, same conversation**: give President-held tasks their own distinct legend color rather than folding them into "Unassigned" (an individual assignee step with no department, which is what a President-assigned task looks like) — "to show hierarchy." Added `PRESIDENT_TASK_COLOR` (`constants.ts`, reuses the exact brand gold hex rather than inventing a new hue) and an `isPresidentTask` check in `taskCalendarColor()` that takes priority over department color (but still loses to the done/blocked/overdue overrides, unchanged). The calendar's dynamic legend row is now sorted President-first, then departments alphabetically, "Unassigned" last, instead of arbitrary query order — a small extra nod to "show hierarchy" beyond just the color.
+
+**Verification**: `tsc`/`eslint`/`npm run build` clean. `task_assignees_select`'s existing RLS policy (`can_view_task(task_id)`) already scopes this new query to the same visibility as the tasks list itself, so no new access-control surface was added.
+
 ## Dashboard polish pass (this session, no schema changes)
 
 User shared a live screenshot of Company Overview and asked for a UI brainstorm; picked "continue with everything raised" but explicitly keep the visible test data (`test`, `asd`, etc.) in place rather than clean it up.

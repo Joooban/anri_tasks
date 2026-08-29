@@ -42,18 +42,29 @@ export function departmentColorSoft(departmentId: string | null | undefined): st
   return `hsl(${hue} 70% 92%)`;
 }
 
+// Reuses the app's brand gold rather than an arbitrary new hue — a task
+// currently held by the President should read as visually distinct from
+// ordinary department work, not just another color in the department
+// rotation, since it represents the top of the org's hierarchy.
+export const PRESIDENT_TASK_COLOR = "#a8710a";
+
 // Calendar task events use department color for normal work, but override
 // it for anything that needs to stand out at a glance while scanning a
 // month view — done (so it visibly stops competing for attention), blocked,
-// and overdue all take priority over "which department is this."
+// and overdue all take priority over "which department is this." Below
+// that, a task currently held by the President (isPresidentTask) takes
+// priority over department color too, since who's holding it right now
+// matters more here than which department they happen to belong to.
 export function taskCalendarColor(
   status: TaskStatus,
   deadline: string | null,
-  departmentId: string | null
+  departmentId: string | null,
+  isPresidentTask: boolean
 ): string {
   if (status === "done") return "hsl(220 10% 75%)";
   if (status === "blocked") return "hsl(0 70% 50%)";
   if (deadline && deadline < new Date().toISOString() && status !== "cancelled") return "hsl(25 85% 50%)";
+  if (isPresidentTask) return PRESIDENT_TASK_COLOR;
   return departmentColor(departmentId);
 }
 
