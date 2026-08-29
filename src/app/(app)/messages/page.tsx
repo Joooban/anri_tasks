@@ -38,18 +38,29 @@ export default async function MessagesPage() {
                   href={`/messages/${c.id}`}
                   className="flex items-center justify-between gap-2 rounded-xl border border-zinc-200 bg-white p-3 hover:border-zinc-300 hover:shadow-sm dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-zinc-700"
                 >
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-medium text-zinc-900 dark:text-zinc-50">
-                      {title}
-                      {c.isGroup && (
-                        <span className="ml-1.5 text-xs font-normal text-zinc-400">
-                          ({c.otherParticipants.length + 1})
-                        </span>
-                      )}
-                    </p>
-                    <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                      {formatDateTime(c.lastMessageAt, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}
-                    </p>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center justify-between gap-2">
+                      <p
+                        className={`truncate text-sm ${c.unread ? "font-semibold text-zinc-900 dark:text-zinc-50" : "font-medium text-zinc-700 dark:text-zinc-300"}`}
+                      >
+                        {title}
+                        {c.isGroup && (
+                          <span className="ml-1.5 text-xs font-normal text-zinc-400">
+                            ({c.otherParticipants.length + 1})
+                          </span>
+                        )}
+                      </p>
+                      <span className="shrink-0 text-xs text-zinc-400">
+                        {formatDateTime(c.lastMessageAt, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}
+                      </span>
+                    </div>
+                    {c.lastMessage && (
+                      <p
+                        className={`truncate text-xs ${c.unread ? "text-zinc-700 dark:text-zinc-300" : "text-zinc-500 dark:text-zinc-400"}`}
+                      >
+                        {c.lastMessage}
+                      </p>
+                    )}
                   </div>
                   {c.unread && <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-blue-600" />}
                 </Link>

@@ -9,8 +9,10 @@ import { CopyForViberButton } from "@/components/tasks/copy-for-viber-button";
 import { CommentsSection } from "@/components/tasks/comments-section";
 import { DeleteTaskButton } from "@/components/tasks/delete-task-button";
 import { Card, CardTitle, EmptyState } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { PersonLabel, personDisplayName } from "@/components/ui/person-label";
 import { formatDateTime } from "@/lib/format-datetime";
+import { taskTypeColor } from "@/lib/constants";
 import { cancelTask } from "@/app/(app)/tasks/[id]/actions";
 
 export default async function TaskDetailPage({
@@ -76,7 +78,7 @@ export default async function TaskDetailPage({
           <div className="mb-1 flex items-center gap-2">
             <TaskStatusBadge status={task.status} />
             {task.task_type && (
-              <span className="text-xs text-zinc-500 dark:text-zinc-400">{task.task_type.name}</span>
+              <Badge className={taskTypeColor(task.task_type.color).badge}>{task.task_type.name}</Badge>
             )}
           </div>
           <h1 className="text-xl font-semibold text-zinc-900 dark:text-zinc-50">{task.title}</h1>

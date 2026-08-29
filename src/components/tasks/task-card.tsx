@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { TaskStatusBadge } from "@/components/tasks/task-status-badge";
-import { departmentColor } from "@/lib/constants";
+import { Badge } from "@/components/ui/badge";
+import { departmentColor, taskTypeColor, NEEDS_ATTENTION_BADGE } from "@/lib/constants";
 import { formatDate } from "@/lib/format-datetime";
 import type { Task } from "@/lib/types";
 
@@ -12,6 +13,11 @@ export interface TaskListItem extends Task {
 
 export function TaskCard({ task }: { task: TaskListItem }) {
   const deadline = task.deadline ? formatDate(task.deadline, { month: "short", day: "numeric" }) : null;
+  const isOverdue =
+    Boolean(task.deadline) &&
+    (task.deadline as string) < new Date().toISOString() &&
+    task.status !== "done" &&
+    task.status !== "cancelled";
 
   return (
     <Link
@@ -33,8 +39,18 @@ export function TaskCard({ task }: { task: TaskListItem }) {
             {task.creator_department.name}
           </span>
         )}
-        {task.task_type && <span>{task.task_type.name}</span>}
-        {deadline && <span>Due {deadline}</span>}
+        {task.task_type && (
+          <span className="flex items-center gap-1.5">
+            <span className={`h-2 w-2 rounded-full ${taskTypeColor(task.task_type.color).dot}`} />
+            {task.task_type.name}
+          </span>
+        )}
+        {deadline &&
+          (isOverdue ? (
+            <Badge className={NEEDS_ATTENTION_BADGE.overdue}>Overdue · {deadline}</Badge>
+          ) : (
+            <span>Due {deadline}</span>
+          ))}
         {task.active_assignee_label && (
           <span className="font-medium text-zinc-700 dark:text-zinc-300">
             Waiting on {task.active_assignee_label}

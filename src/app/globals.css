@@ -115,6 +115,29 @@ button:disabled {
   display: none !important;
 }
 
+/* FullCalendar's header toolbar buttons (prev/next/today, view switcher)
+   ship with their own default skin and no visible distinction for which
+   view is currently active — confirmed by reading @fullcalendar/core's
+   actual CSS: the active/pressed state
+   (.fc-button-primary:not(:disabled).fc-button-active) only exposes
+   --fc-button-active-bg-color/--fc-button-active-border-color as theme
+   variables, not a separate text color, so text stays --fc-button-text-color
+   even against the new gold background — hence the explicit color
+   override below, which a variable alone can't express. */
+.fc {
+  --fc-button-text-color: #3f3f46;
+  --fc-button-bg-color: transparent;
+  --fc-button-border-color: #d4d4d8;
+  --fc-button-hover-bg-color: #f4f4f5;
+  --fc-button-hover-border-color: #d4d4d8;
+  --fc-button-active-bg-color: var(--brand);
+  --fc-button-active-border-color: var(--brand);
+}
+.fc .fc-button-primary:not(:disabled).fc-button-active,
+.fc .fc-button-primary:not(:disabled):active {
+  color: #ffffff;
+}
+
 /* FullCalendar's column header row (the Sun/Mon/.../Sat labels) is
    position: sticky with an explicit background: var(--fc-page-bg-color) so
    day cells don't show through it while scrolling. That variable defaults
@@ -131,6 +154,13 @@ button:disabled {
   --fc-today-bg-color: rgba(202, 138, 4, 0.15);
   --fc-more-link-bg-color: #3f3f46;
   --fc-more-link-text-color: #e4e4e7;
+  --fc-button-text-color: #d4d4d8;
+  --fc-button-bg-color: transparent;
+  --fc-button-border-color: #3f3f46;
+  --fc-button-hover-bg-color: #27272a;
+  --fc-button-hover-border-color: #3f3f46;
+  --fc-button-active-bg-color: var(--brand);
+  --fc-button-active-border-color: var(--brand);
 }
 
 /* FullCalendar's header toolbar (prev/next/today, title, view switcher) is

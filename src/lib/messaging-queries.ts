@@ -15,6 +15,7 @@ export interface ConversationListItem {
   lastMessageAt: string;
   otherParticipants: ConversationParticipant[];
   unread: boolean;
+  lastMessage: string | null;
 }
 
 // Ordered by most recent activity. "Unread" compares last_message_at
@@ -33,6 +34,26 @@ export async function getConversations(): Promise<ConversationListItem[]> {
       "id,is_group,name,last_message_at,conversation_participants(profile_id,last_read_at,profile:profiles(id,full_name,email,nickname))"
     )
     .order("last_message_at", { ascending: false });
+
+  const conversationIds = (data ?? []).map((c) => c.id);
+  // Latest message body per conversation, for the list preview — decrypted
+  // server-side same as everywhere else message content is shown. No
+  // per-row "latest" query in Postgres without a view, so this fetches
+  // every message for these conversations, sorted, and keeps the first
+  // (most recent) one per conversation in JS.
+  const lastMessageByConversation = new Map<string, string>();
+  if (conversationIds.length > 0) {
+    const { data: recentMessages } = await supabase
+      .from("messages")
+      .select("conversation_id,body,created_at")
+      .in("conversation_id", conversationIds)
+      .order("created_at", { ascending: false });
+    for (const m of recentMessages ?? []) {
+      if (!lastMessageByConversation.has(m.conversation_id)) {
+        lastMessageByConversation.set(m.conversation_id, decrypt(m.body));
+      }
+    }
+  }
 
   return (data ?? []).map((c) => {
     const participants = (c.conversation_participants ?? []) as unknown as Array<{
@@ -54,6 +75,7 @@ export async function getConversations(): Promise<ConversationListItem[]> {
       lastMessageAt: c.last_message_at,
       otherParticipants: others,
       unread,
+      lastMessage: lastMessageByConversation.get(c.id) ?? null,
     };
   });
 }

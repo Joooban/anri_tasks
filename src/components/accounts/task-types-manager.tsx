@@ -3,6 +3,7 @@
 import { useRef, useState, useTransition } from "react";
 import { addTaskType, deleteTaskType } from "@/app/(app)/accounts/task-type-actions";
 import { Card, CardTitle } from "@/components/ui/card";
+import { taskTypeColor } from "@/lib/constants";
 import type { TaskType } from "@/lib/types";
 
 const COLOR_OPTIONS = ["zinc", "blue", "amber", "emerald", "red", "violet", "pink"];
@@ -69,7 +70,7 @@ export function TaskTypesManager({ items }: { items: TaskType[] }) {
           {items.map((item) => (
             <li
               key={item.id}
-              className="flex items-center gap-1.5 rounded-full bg-zinc-100 px-2.5 py-1 text-xs text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
+              className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs ${taskTypeColor(item.color).badge}`}
             >
               {item.name}
               <button

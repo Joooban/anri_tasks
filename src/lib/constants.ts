@@ -87,6 +87,25 @@ export const HEALTH_CARD_STYLES: Record<HealthStatus, string> = {
   red: "border-l-4 border-l-red-400 border-zinc-200 bg-red-50/40 dark:border-l-red-500 dark:border-zinc-800 dark:bg-red-950/10",
 };
 
+// task_types.color is one of these 7 (COLOR_OPTIONS, task-types-manager.tsx)
+// but was captured on creation and never actually rendered anywhere —
+// TaskCard, the task detail page, and the manager's own chip list all
+// showed every type in the same flat gray regardless of the color picked.
+// Dot for compact contexts (task cards), badge for the manager's chip list.
+export const TASK_TYPE_COLORS: Record<string, { dot: string; badge: string }> = {
+  zinc: { dot: "bg-zinc-400", badge: "bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300" },
+  blue: { dot: "bg-blue-500", badge: "bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300" },
+  amber: { dot: "bg-amber-500", badge: "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300" },
+  emerald: { dot: "bg-emerald-500", badge: "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300" },
+  red: { dot: "bg-red-500", badge: "bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300" },
+  violet: { dot: "bg-violet-500", badge: "bg-violet-100 text-violet-700 dark:bg-violet-950 dark:text-violet-300" },
+  pink: { dot: "bg-pink-500", badge: "bg-pink-100 text-pink-700 dark:bg-pink-950 dark:text-pink-300" },
+};
+
+export function taskTypeColor(color: string | null | undefined): { dot: string; badge: string } {
+  return TASK_TYPE_COLORS[color ?? "zinc"] ?? TASK_TYPE_COLORS.zinc;
+}
+
 // Same reasons NeedsAttentionTask can carry (dashboard-queries.ts) — colored
 // so "Needs attention" reads at a glance instead of requiring each line to
 // be read, matching the badge language already used on task step statuses.

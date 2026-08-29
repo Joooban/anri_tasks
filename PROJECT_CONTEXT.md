@@ -1,5 +1,16 @@
 # ANRI Task Management System — Project Context
 
+## Four more UI fixes from a screenshot round of Tasks/Calendar/Messages/Accounts (this session, no schema changes)
+
+Same live-screenshot-and-brainstorm pattern as the dashboard pass, this time across five tabs. User confirmed the two-admin approval flow works, then picked all four raised items.
+
+- **Task type color was genuinely dead data.** `task_types.color` (one of 7 options picked at creation) was fetched everywhere task types show up but never actually rendered — `TaskCard`, the task detail page, and `TaskTypesManager`'s own chip list all showed every type in flat gray regardless of what was picked. New `taskTypeColor()` helper (`constants.ts`, maps all 7 `COLOR_OPTIONS` to dot/badge classes) wired into all three places.
+- **Overdue tasks didn't stand out on the Tasks grid.** `TaskCard` now shows the due date as a red "Overdue · <date>" badge (reusing `NEEDS_ATTENTION_BADGE.overdue`, the same one built for the dashboard) instead of plain gray text, when the deadline has passed and the task isn't done/cancelled.
+- **Calendar's month/week/list toggle had no visible active state** — confirmed by reading `@fullcalendar/core`'s actual bundled CSS rather than guessing: the active-button selector only exposes `--fc-button-active-bg-color`/`--fc-button-active-border-color` as theme variables, no active-text-color counterpart. Set those two (to the brand color) plus the rest of the button theme variables in `globals.css`, with one explicit `color: #fff` override on the active/pressed selector since that part genuinely can't be expressed as a variable.
+- **Messages conversation list showed no message preview and no visual weight difference for unread** (only a small blue dot). `getConversations()` (`messaging-queries.ts`) now also fetches each conversation's latest message — no per-row "latest" query in Postgres without a view, so it fetches every message for the visible conversations, sorted, and keeps the first (most recent) per conversation in JS, same pattern used for the calendar's "current holder" resolution. Decrypted server-side like every other message body. List rows now show that preview, and unread rows render bold/full-contrast while read ones are visually quieter.
+
+**Verification**: `tsc`/`eslint`/`npm run build` clean. The new messages query relies on the existing `messages_select` RLS policy (`is_conversation_participant(conversation_id)`) for scoping — confirmed that policy exists before writing the query, no new access-control surface.
+
 ## Pending-approval badge on the Accounts nav item (this session, no schema changes)
 
 User asked for a notification on Accounts when there's an admin-role grant awaiting their approval — same idea as the existing Messages unread badge, which already existed as a pattern to copy.
