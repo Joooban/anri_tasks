@@ -1,6 +1,18 @@
 # ANRI Task Management System — Project Context
 
-## Mobile horizontal-scroll bug on Dashboard/Needs attention (this session, no schema changes)
+## Mobile overflow, round 2: the real root cause was a bare `grid` with no base column count (this session, no schema changes)
+
+The previous fix (`min-w-0` on truncated flex text + `overflow-x-hidden` on `<main>`) stopped the page from scrolling horizontally, but the user's follow-up screenshot showed the same content now silently clipped instead of actually fitting — worse in a way, since it disappeared rather than being reachable by scroll. That was the real signal: `overflow-x-hidden` was correctly containing an overflow, but something was still overflowing.
+
+Found it: every multi-column grid in the app (`grid gap-4 lg:grid-cols-2`, `grid gap-3 sm:grid-cols-2 xl:grid-cols-3`, etc.) relied on a responsive-prefixed `grid-cols-N` class but never set an explicit base one. Tailwind's `grid-cols-N` utilities generate `grid-template-columns: repeat(N, minmax(0, 1fr))` — the `minmax(0, ...)` is what stops a column from growing to fit its widest child's content. Without an explicit base class, the single mobile column had no `grid-template-columns` at all below the breakpoint, so the browser's default `auto`-sized implicit track applied instead, which has no such protection — it happily grows to fit content, dragging the whole page wider. `min-w-0` on individual flex children (the round-1 fix) can't compensate for an ancestor grid track that was never constrained in the first place.
+
+Fixed by adding an explicit `grid-cols-1` before every responsive prefix, across all 7 occurrences of this pattern app-wide (`dashboard/page.tsx`, `departments/page.tsx` ×2, `department-dashboard.tsx`, `tasks/page.tsx`, `department-tiles.tsx`, `create-meeting-form.tsx`) — not just the one the screenshot happened to show, since they all shared the exact same gap. `overflow-x-hidden` on `<main>` stays as the defense-in-depth backstop from round 1.
+
+**Lesson for next time this pattern shows up**: a Tailwind grid meant to be responsive should always declare its base-breakpoint column count explicitly, never rely on the implicit single-column fallback — that fallback is what's missing `minmax(0, ...)`.
+
+**Verification**: `tsc`/`eslint`/`npm run build` clean.
+
+## Mobile horizontal-scroll bug on Dashboard/Needs attention, round 1 (this session, no schema changes)
 
 User reported a horizontal scrollbar on the Dashboard's mobile view via an iPhone-width screenshot. Root cause: `TaskMiniList`'s truncating title `<span>` (the "Needs attention" widget) was a flex child with no `min-w-0` — Tailwind's `truncate` utility (`overflow:hidden; text-overflow:ellipsis; white-space:nowrap`) does nothing on its own inside a flex row, since flex items default to `min-width: auto` (their content's intrinsic width), so the item never actually shrinks below its full unbroken text width. A long task title just forced the row, and the whole page, wider than the viewport instead of ellipsizing — visible as content cut off at a fixed pixel offset rather than wrapping to the screen width.
 

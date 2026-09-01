@@ -8,7 +8,7 @@ export function DepartmentTiles({ items }: { items: DepartmentHealth[] }) {
   return (
     <Card>
       <CardTitle className="mb-3">Departments</CardTitle>
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
         {items.map((item) => (
           <Link
             key={item.department.id}

@@ -128,7 +128,7 @@ export default async function DashboardPage() {
             <WidgetCatalog enabledWidgets={enabledWidgets} widgetOrder={widgetOrder} />
           )}
         </div>
-        <div className="grid gap-4 lg:grid-cols-2">
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
           {widgetOrder.filter((w) => enabledWidgets.includes(w)).map((w) => (
             // department_tiles needs room to list every department (this
             // company has 14, with genuinely long names), and the client

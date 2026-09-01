@@ -52,7 +52,7 @@ export default async function DepartmentsPage({
     <div className="flex flex-col gap-4">
       <h1 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">Company Overview</h1>
 
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
         {health.map((item) => (
           <Link
             key={item.department.id}
@@ -99,7 +99,7 @@ export default async function DepartmentsPage({
         <CompletionTrendChart points={trendPoints} />
       </Card>
 
-      <div className="grid gap-4 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <UpcomingBirthdaysCard items={birthdays} />
         <DocumentTemplatesCard items={templates} canManage={permissions.has("manage_document_templates")} />
       </div>

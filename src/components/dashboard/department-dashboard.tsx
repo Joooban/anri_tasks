@@ -57,7 +57,7 @@ export async function DepartmentDashboard({
       <h1 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">
         {departmentName ?? "Department"} Dashboard
       </h1>
-      <div className="grid gap-4 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <CompletionRateCard today={today} week={week} month={month} />
 
         <Card>
