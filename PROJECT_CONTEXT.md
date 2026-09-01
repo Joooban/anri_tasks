@@ -1,5 +1,15 @@
 # ANRI Task Management System — Project Context
 
+## Mobile horizontal-scroll bug on Dashboard/Needs attention (this session, no schema changes)
+
+User reported a horizontal scrollbar on the Dashboard's mobile view via an iPhone-width screenshot. Root cause: `TaskMiniList`'s truncating title `<span>` (the "Needs attention" widget) was a flex child with no `min-w-0` — Tailwind's `truncate` utility (`overflow:hidden; text-overflow:ellipsis; white-space:nowrap`) does nothing on its own inside a flex row, since flex items default to `min-width: auto` (their content's intrinsic width), so the item never actually shrinks below its full unbroken text width. A long task title just forced the row, and the whole page, wider than the viewport instead of ellipsizing — visible as content cut off at a fixed pixel offset rather than wrapping to the screen width.
+
+Fixed the actual bug (`min-w-0 flex-1` added to the truncating span in `task-mini-list.tsx`) and proactively fixed the identical pattern already sitting in `messages/page.tsx`'s conversation list (written earlier this same session with the same missing `min-w-0`, not yet reported but certain to surface the same way on a long conversation name). `document-templates-card.tsx` already had this right and was the reference for the fix.
+
+Also added `overflow-x-hidden` to `AppShell`'s `<main>` as a defense-in-depth safety net, not a fix for this specific bug — so a future component that forgets `min-w-0` on truncated flex text clips locally instead of dragging the entire page into horizontal scroll again.
+
+**Verification**: `tsc`/`eslint`/`npm run build` clean. Can't visually verify on an actual mobile viewport in this environment; the fix follows a well-understood, standard CSS mechanism (documented Tailwind/flexbox behavior), not a guess.
+
 ## Four more UI fixes from a screenshot round of Tasks/Calendar/Messages/Accounts (this session, no schema changes)
 
 Same live-screenshot-and-brainstorm pattern as the dashboard pass, this time across five tabs. User confirmed the two-admin approval flow works, then picked all four raised items.

@@ -41,7 +41,7 @@ export default async function MessagesPage() {
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center justify-between gap-2">
                       <p
-                        className={`truncate text-sm ${c.unread ? "font-semibold text-zinc-900 dark:text-zinc-50" : "font-medium text-zinc-700 dark:text-zinc-300"}`}
+                        className={`min-w-0 flex-1 truncate text-sm ${c.unread ? "font-semibold text-zinc-900 dark:text-zinc-50" : "font-medium text-zinc-700 dark:text-zinc-300"}`}
                       >
                         {title}
                         {c.isGroup && (

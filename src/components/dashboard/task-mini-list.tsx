@@ -35,7 +35,7 @@ export function TaskMiniList({
                 href={`/tasks/${item.id}`}
                 className="flex items-center justify-between gap-2 rounded-lg px-2 py-1.5 text-sm hover:bg-zinc-100 dark:hover:bg-zinc-800"
               >
-                <span className="truncate text-zinc-800 dark:text-zinc-200">{item.title}</span>
+                <span className="min-w-0 flex-1 truncate text-zinc-800 dark:text-zinc-200">{item.title}</span>
                 {item.metaBadgeClassName ? (
                   <Badge className={`shrink-0 ${item.metaBadgeClassName}`}>{item.meta}</Badge>
                 ) : (

@@ -89,7 +89,12 @@ export function AppShell({
           <PreviewBanner role={previewInfo.role} departmentName={previewInfo.departmentName} />
         )}
         <TopBar fullName={fullName} email={email} role={topBarRole} onMenuClick={() => setMobileOpen(true)} />
-        <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">{children}</main>
+        {/* overflow-x-hidden is a safety net, not the fix for any specific
+            bug — a flex/grid child that forgets min-w-0 on truncated text
+            (the actual bug class, see task-mini-list.tsx and messages/
+            page.tsx) would otherwise force the whole page to scroll
+            horizontally instead of just that one element clipping. */}
+        <main className="flex-1 overflow-x-hidden overflow-y-auto p-4 sm:p-6 lg:p-8">{children}</main>
       </div>
     </div>
   );
