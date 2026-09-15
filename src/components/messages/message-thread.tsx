@@ -5,7 +5,7 @@ import { sendMessage, markConversationRead, fetchMessages } from "@/app/(app)/me
 import { createClient } from "@/lib/supabase/client";
 import { formatDateTime } from "@/lib/format-datetime";
 import { personDisplayName } from "@/components/ui/person-label";
-import type { MessageItem } from "@/lib/messaging-queries";
+import type { MessageItem, ParticipantReadState } from "@/lib/messaging-queries";
 
 // Kept as a fallback safety net (connection drops, a missed event) — the
 // real delivery mechanism is the Realtime broadcast below, not this timer.
@@ -14,13 +14,18 @@ const FALLBACK_POLL_INTERVAL_MS = 20000;
 export function MessageThread({
   conversationId,
   initialMessages,
+  initialOtherParticipants,
   myProfileId,
+  isGroup,
 }: {
   conversationId: string;
   initialMessages: MessageItem[];
+  initialOtherParticipants: ParticipantReadState[];
   myProfileId: string;
+  isGroup: boolean;
 }) {
   const [messages, setMessages] = useState(initialMessages);
+  const [otherParticipants, setOtherParticipants] = useState(initialOtherParticipants);
   const [value, setValue] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -42,14 +47,20 @@ export function MessageThread({
     channel
       .on("broadcast", { event: "new_message" }, async () => {
         const fresh = await fetchMessages(conversationId);
-        setMessages(fresh);
+        setMessages(fresh.messages);
+        setOtherParticipants(fresh.otherParticipants);
         markConversationRead(conversationId);
       })
       .subscribe();
 
+    // The other participant's "Seen" state only updates when someone
+    // actually re-fetches — there's no broadcast for "read," just for new
+    // messages — so this poll is also what keeps the Seen indicator
+    // reasonably current, not only a delivery fallback.
     const interval = setInterval(async () => {
       const fresh = await fetchMessages(conversationId);
-      setMessages(fresh);
+      setMessages(fresh.messages);
+      setOtherParticipants(fresh.otherParticipants);
     }, FALLBACK_POLL_INTERVAL_MS);
 
     return () => {
@@ -74,8 +85,25 @@ export function MessageThread({
       }
       setValue("");
       const fresh = await fetchMessages(conversationId);
-      setMessages(fresh);
+      setMessages(fresh.messages);
+      setOtherParticipants(fresh.otherParticipants);
     });
+  }
+
+  // "Seen" only ever annotates the last message in the thread, and only
+  // when that message is mine — matching how most chat apps show read
+  // receipts (on your own latest bubble, not on every message you've sent).
+  const lastMessage = messages[messages.length - 1];
+  const lastMessageIsMine = lastMessage?.senderId === myProfileId;
+  const seenBy = lastMessageIsMine
+    ? otherParticipants.filter((p) => p.lastReadAt && p.lastReadAt >= lastMessage.createdAt)
+    : [];
+
+  function seenLabel(): string | null {
+    if (!lastMessageIsMine || otherParticipants.length === 0 || seenBy.length === 0) return null;
+    if (!isGroup) return "Seen";
+    if (seenBy.length === otherParticipants.length) return "Seen by all";
+    return `Seen by ${seenBy.map((p) => (p.profile ? personDisplayName(p.profile) : "someone")).join(", ")}`;
   }
 
   return (
@@ -102,6 +130,7 @@ export function MessageThread({
                 </div>
                 <p className="mt-0.5 text-[0.65rem] text-zinc-400">
                   {formatDateTime(m.createdAt, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}
+                  {m.id === lastMessage.id && seenLabel() && <> · {seenLabel()}</>}
                 </p>
               </div>
             );

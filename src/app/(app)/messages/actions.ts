@@ -5,12 +5,12 @@ import { createClient } from "@/lib/supabase/server";
 import { encrypt } from "@/lib/encryption";
 import { friendlyError } from "@/lib/friendly-error";
 import { nullableRpcArg } from "@/lib/rpc-utils";
-import { getConversationMessages, type MessageItem } from "@/lib/messaging-queries";
+import { getConversationMessages, type ConversationMessagesResult } from "@/lib/messaging-queries";
 
 // Client-callable wrapper so the thread's polling loop (message content is
 // decrypted server-side, so the client can't query Supabase directly the
 // way it does for non-sensitive data) can re-fetch on an interval.
-export async function fetchMessages(conversationId: string): Promise<MessageItem[]> {
+export async function fetchMessages(conversationId: string): Promise<ConversationMessagesResult> {
   return getConversationMessages(conversationId);
 }
 

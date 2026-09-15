@@ -88,15 +88,41 @@ export interface MessageItem {
   sender: ConversationParticipant | null;
 }
 
-export async function getConversationMessages(conversationId: string): Promise<MessageItem[]> {
-  const supabase = await createClient();
-  const { data } = await supabase
-    .from("messages")
-    .select("id,sender_id,body,created_at,sender:profiles(id,full_name,email,nickname)")
-    .eq("conversation_id", conversationId)
-    .order("created_at", { ascending: true });
+// Every other participant's read-through point, for the "Seen" indicator —
+// a message counts as seen by someone once their last_read_at reaches or
+// passes that message's created_at. Reuses the same last_read_at column
+// mark_conversation_read_rpc already maintains for the unread badge, so no
+// schema change is needed for this feature.
+export interface ParticipantReadState {
+  profileId: string;
+  profile: ConversationParticipant | null;
+  lastReadAt: string | null;
+}
 
-  return ((data ?? []) as unknown as Array<{
+export interface ConversationMessagesResult {
+  messages: MessageItem[];
+  otherParticipants: ParticipantReadState[];
+}
+
+export async function getConversationMessages(conversationId: string): Promise<ConversationMessagesResult> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const [{ data: messageRows }, { data: participantRows }] = await Promise.all([
+    supabase
+      .from("messages")
+      .select("id,sender_id,body,created_at,sender:profiles(id,full_name,email,nickname)")
+      .eq("conversation_id", conversationId)
+      .order("created_at", { ascending: true }),
+    supabase
+      .from("conversation_participants")
+      .select("profile_id,last_read_at,profile:profiles(id,full_name,email,nickname)")
+      .eq("conversation_id", conversationId),
+  ]);
+
+  const messages = ((messageRows ?? []) as unknown as Array<{
     id: string;
     sender_id: string;
     body: string;
@@ -109,6 +135,16 @@ export async function getConversationMessages(conversationId: string): Promise<M
     createdAt: m.created_at,
     sender: m.sender,
   }));
+
+  const otherParticipants = ((participantRows ?? []) as unknown as Array<{
+    profile_id: string;
+    last_read_at: string | null;
+    profile: ConversationParticipant | null;
+  }>)
+    .filter((p) => p.profile_id !== user?.id)
+    .map((p) => ({ profileId: p.profile_id, profile: p.profile, lastReadAt: p.last_read_at }));
+
+  return { messages, otherParticipants };
 }
 
 export async function getUnreadMessageCount(): Promise<number> {

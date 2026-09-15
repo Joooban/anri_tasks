@@ -1,7 +1,9 @@
 import { redirect } from "next/navigation";
 import { getCurrentProfile } from "@/lib/get-current-profile";
+import { getMyFiles } from "@/lib/personal-files-queries";
 import { Card, CardTitle } from "@/components/ui/card";
 import { NicknameForm } from "@/components/profile/nickname-form";
+import { MyFilesCard } from "@/components/profile/my-files-card";
 import { ROLE_LABELS } from "@/lib/types";
 
 export default async function ProfilePage() {
@@ -9,6 +11,7 @@ export default async function ProfilePage() {
   if (!current) redirect("/login");
 
   const { profile, department } = current;
+  const myFiles = await getMyFiles();
 
   return (
     <div className="flex flex-col gap-4">
@@ -47,6 +50,8 @@ export default async function ProfilePage() {
         </p>
         <NicknameForm currentNickname={profile.nickname} />
       </Card>
+
+      <MyFilesCard items={myFiles} />
     </div>
   );
 }

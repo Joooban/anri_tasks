@@ -516,6 +516,44 @@ export type Database = {
           },
         ]
       }
+      personal_files: {
+        Row: {
+          created_at: string
+          file_name: string
+          file_size: number | null
+          id: string
+          mime_type: string | null
+          owner_id: string
+          storage_path: string
+        }
+        Insert: {
+          created_at?: string
+          file_name: string
+          file_size?: number | null
+          id?: string
+          mime_type?: string | null
+          owner_id: string
+          storage_path: string
+        }
+        Update: {
+          created_at?: string
+          file_name?: string
+          file_size?: number | null
+          id?: string
+          mime_type?: string | null
+          owner_id?: string
+          storage_path?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "personal_files_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           admin_role_id: string | null

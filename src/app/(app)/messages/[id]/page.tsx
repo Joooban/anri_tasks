@@ -25,7 +25,7 @@ export default async function ConversationPage({ params }: { params: Promise<{ i
   // the way task detail pages do for shared links.
   if (!conversation) notFound();
 
-  const messages = await getConversationMessages(id);
+  const { messages, otherParticipants } = await getConversationMessages(id);
 
   const participants = (conversation.conversation_participants ?? []) as unknown as Array<{
     profile_id: string;
@@ -48,8 +48,19 @@ export default async function ConversationPage({ params }: { params: Promise<{ i
           ← Messages
         </Link>
         <h1 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">{title}</h1>
+        {conversation.is_group && (
+          <p className="text-xs text-zinc-500 dark:text-zinc-400">
+            Members: You, {others.map((p) => personDisplayName(p)).join(", ")}
+          </p>
+        )}
       </div>
-      <MessageThread conversationId={id} initialMessages={messages} myProfileId={current.profile.id} />
+      <MessageThread
+        conversationId={id}
+        initialMessages={messages}
+        initialOtherParticipants={otherParticipants}
+        myProfileId={current.profile.id}
+        isGroup={conversation.is_group}
+      />
     </div>
   );
 }
