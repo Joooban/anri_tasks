@@ -3,6 +3,17 @@ import { createClient } from "@/lib/supabase/server";
 
 const ALLOWED_DOMAIN = process.env.NEXT_PUBLIC_GOOGLE_WORKSPACE_DOMAIN;
 
+// `next` is appended straight onto the origin below, so anything that isn't
+// a plain same-site path would turn this into an open redirect — e.g.
+// "@evil.com" makes "https://app@evil.com" (evil.com, with "app" as
+// userinfo), and "//evil.com" or "/\evil.com" are protocol-relative.
+function safeNextPath(next: string | null): string {
+  if (!next || !next.startsWith("/") || next.startsWith("//") || next.startsWith("/\\")) {
+    return "/dashboard";
+  }
+  return next;
+}
+
 // Exchanges the OAuth code for a session, then enforces access control
 // server-side (the `hd` hint on the login page is only a UX nicety and can
 // be bypassed). Two gates, both optional-if-unset so either can be used
@@ -17,9 +28,15 @@ const ALLOWED_DOMAIN = process.env.NEXT_PUBLIC_GOOGLE_WORKSPACE_DOMAIN;
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
-  const next = searchParams.get("next") ?? "/dashboard";
+  const next = safeNextPath(searchParams.get("next"));
 
   if (!code) {
+    // handle_new_auth_user (0036) refuses to create an auth user whose
+    // email isn't allowlisted, which Supabase reports back here as a
+    // generic database error instead of a code.
+    if (searchParams.get("error_description")?.includes("Database error saving new user")) {
+      return NextResponse.redirect(`${origin}/auth/auth-error?reason=not_allowlisted`);
+    }
     return NextResponse.redirect(`${origin}/auth/auth-error?reason=missing_code`);
   }
 

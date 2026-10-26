@@ -90,6 +90,27 @@ export async function updateSession(request: NextRequest) {
     return response;
   }
 
+  // The OAuth callback's allowlist check only runs once, at sign-in — a
+  // session that predates a removal (or that skipped the callback
+  // entirely) has to be caught here. RLS enforces the same rule at the
+  // database (0036_security_hardening.sql); this just signs them out
+  // cleanly instead of leaving them on a page full of empty data. An RPC
+  // *error* doesn't sign anyone out, so a transient outage can't log the
+  // whole company out at once — the database layer still holds.
+  if (user && !isPublicPath(pathname)) {
+    const { data: active, error } = await supabase.rpc("is_active_member");
+    if (!error && active === false) {
+      await supabase.auth.signOut();
+      const url = request.nextUrl.clone();
+      url.pathname = "/auth/auth-error";
+      url.search = "?reason=inactive";
+      const response = NextResponse.redirect(url);
+      supabaseResponse.cookies.getAll().forEach((cookie) => response.cookies.set(cookie));
+      response.headers.set("Content-Security-Policy", csp);
+      return response;
+    }
+  }
+
   if (user && pathname === "/login") {
     const url = request.nextUrl.clone();
     url.pathname = "/dashboard";

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useTransition } from "react";
 import { sendMessage, markConversationRead, fetchMessages } from "@/app/(app)/messages/actions";
 import { createClient } from "@/lib/supabase/client";
 import { formatDateTime } from "@/lib/format-datetime";
+import { MAX_MESSAGE_LENGTH } from "@/lib/constants";
 import { personDisplayName } from "@/components/ui/person-label";
 import type { MessageItem, ParticipantReadState } from "@/lib/messaging-queries";
 
@@ -150,6 +151,7 @@ export function MessageThread({
             }
           }}
           rows={2}
+          maxLength={MAX_MESSAGE_LENGTH}
           placeholder="Message…"
           className="flex-1 rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
         />

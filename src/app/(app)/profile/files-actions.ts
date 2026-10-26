@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createServiceRoleClient } from "@/lib/supabase/service-role";
 import { encryptBuffer } from "@/lib/encryption";
 import { friendlyError } from "@/lib/friendly-error";
+import { safeStorageName } from "@/lib/storage-path";
 
 const MAX_FILE_BYTES = 25 * 1024 * 1024; // 25 MiB, matches the bucket limit (0035)
 
@@ -31,7 +32,7 @@ export async function uploadPersonalFile(_prevState: { error: string | null }, f
   // policy involving a lookup, which has a documented history in this
   // project of silently rejecting valid writes.
   const serviceRole = createServiceRoleClient();
-  const path = `${userId}/${crypto.randomUUID()}-${file.name}`;
+  const path = `${userId}/${crypto.randomUUID()}-${safeStorageName(file.name)}`;
   const plainBytes = Buffer.from(await file.arrayBuffer());
   const encryptedBytes = encryptBuffer(plainBytes);
 

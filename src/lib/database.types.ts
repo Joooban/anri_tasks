@@ -1010,6 +1010,7 @@ export type Database = {
         Args: { p_conversation_id: string }
         Returns: boolean
       }
+      is_active_member: { Args: never; Returns: boolean }
       is_email_allowed: { Args: { p_email: string }; Returns: boolean }
       list_allowed_emails_rpc: {
         Args: never
