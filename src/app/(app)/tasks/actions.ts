@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createServiceRoleClient } from "@/lib/supabase/service-role";
 import { encrypt, encryptNullable, encryptBuffer } from "@/lib/encryption";
 import { friendlyError } from "@/lib/friendly-error";
+import { safeStorageName } from "@/lib/storage-path";
 import { nullableRpcArg } from "@/lib/rpc-utils";
 import { revalidateTaskRelatedPaths } from "@/lib/revalidate-task-paths";
 
@@ -136,7 +137,7 @@ export async function createTask(
         failedFiles.push(file.name);
         continue;
       }
-      const path = `${taskId}/${Date.now()}-${file.name}`;
+      const path = `${taskId}/${Date.now()}-${safeStorageName(file.name)}`;
       // File content is encrypted before it ever reaches Storage — what's
       // stored there is ciphertext, not the real file, so it's served with
       // a generic content type rather than the original one. Only the

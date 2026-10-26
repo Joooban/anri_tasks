@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceRoleClient } from "@/lib/supabase/service-role";
 import { friendlyError } from "@/lib/friendly-error";
+import { safeStorageName } from "@/lib/storage-path";
 
 const ALLOWED_TEMPLATE_MIME_TYPES = new Set([
   "application/pdf",
@@ -45,7 +46,7 @@ export async function uploadDocumentTemplate(_prevState: { error: string | null 
   // service role rather than the user's own session, with authorization
   // already checked above instead of depending on a storage.objects policy.
   const serviceRole = createServiceRoleClient();
-  const path = `${crypto.randomUUID()}-${file.name}`;
+  const path = `${crypto.randomUUID()}-${safeStorageName(file.name)}`;
   const bytes = Buffer.from(await file.arrayBuffer());
   const { error: uploadError } = await serviceRole.storage
     .from("document-templates")

@@ -1,5 +1,19 @@
 # ANRI Task Management System — Project Context
 
+## Third security review (this session, migration 0036 — applied to live DB and verified)
+
+- **High — removed/non-allowlisted accounts kept access.** Allowlist + deactivation were only checked once, in `/auth/callback`. A removed user's existing session kept working, and anyone could get a session by finishing the PKCE exchange themselves without hitting the callback. Fix: new `is_active_member()` (profile not deactivated AND email allowlisted); `handle_new_auth_user` now refuses non-allowlisted sign-ups; a RESTRICTIVE `<table>_active_member_only` policy on every table; `my_role`/`my_department_id`/`is_boss_or_supervisor`/`has_permission`/`is_any_admin`/`can_view_task`/`can_act_on_step`/`is_conversation_participant` all return false/null for inactive accounts; `remove_user_rpc` deletes the user's `auth.sessions`; the middleware calls `is_active_member` and signs inactive users out (it fails open on RPC error, so it's safe to deploy before the migration). **Consequence: an email removed from the allowlist now loses access immediately, not just at next sign-in.**
+- **High — `update_account_rpc` let a `manage_accounts` Admin demote the President/Supervisor** (it only guarded the role being granted). Now also guards on the target's current role.
+- **Medium — `update_admin_role_rpc` let a `manage_roles` Admin widen a role that's already assigned** (incl. their own), skipping two-admin approval. Non-President editors can now only rename/remove permissions on assigned roles.
+- **Medium — open redirect** in `/auth/callback` via `?next=@evil.com`. `next` must now be a plain same-site path.
+- **Low — upload filenames were used verbatim in Storage keys.** Now sanitized via `safeStorageName()` (`src/lib/storage-path.ts`); the original name stays in `file_name`.
+- **Allowlist removal guard**: since removing an email now revokes access immediately, `remove_allowed_email_rpc` refuses to let a non-President remove a President/Supervisor email, and refuses anyone removing their own.
+- **Low — no message size cap**: 5000 chars (`MAX_MESSAGE_LENGTH`) in the textarea + action; `send_message_rpc` caps the ciphertext at 30000.
+- **Dependabot** (`.github/dependabot.yml`): weekly npm update PRs.
+- **Dependencies**: Next.js 16.3.0 → 16.4.3 (multiple critical RCE advisories), plus `npm audit fix` (sharp, zod, source-map-js). `npm audit` now clean.
+- **Supabase Auth config (applied via Management API)**: email/password provider disabled (all 6 accounts are Google; app only uses `signInWithOAuth`). Session inactivity timeout/timebox NOT set — requires Pro plan.
+- **Shelved for budget — no database backups.** Free plan: 0 backups, PITR off. Pro (~$25/mo) would add daily backups and unlock session timeouts. Revisit before handover/production; until then a manual `npx supabase db dump` is the only safety net.
+
 ## Three client-requested features from a live meeting: seen receipts, group member list, personal file repository (this session, migration 0035)
 
 Relayed from a client meeting: "add seen on the messages," "show names for those who are present on the groupchat," "repository for each person to store their files."

@@ -5,7 +5,9 @@ const REASONS: Record<string, string> = {
     "That Google account isn't part of the company Workspace domain. Please sign in with your company email.",
   not_allowlisted:
     "This email hasn't been approved for access yet. Ask the Resident Manager to add it, then try again.",
-  exchange_failed: "We couldn't complete sign-in. Please try again.",
+  inactive:
+    "This account no longer has access. If you think this is a mistake, contact the Resident Manager.",
+  exchange_failed:"We couldn't complete sign-in. Please try again.",
   missing_code: "Sign-in was interrupted. Please try again.",
 };
 

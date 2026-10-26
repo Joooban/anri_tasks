@@ -114,3 +114,7 @@ export const NEEDS_ATTENTION_BADGE: Record<"overdue" | "blocked" | "due_soon", s
   blocked: "bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300",
   due_soon: "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300",
 };
+
+// Plaintext cap for a single chat message — enforced in the textarea, the
+// sendMessage action, and (on the encrypted form) send_message_rpc (0036).
+export const MAX_MESSAGE_LENGTH = 5000;

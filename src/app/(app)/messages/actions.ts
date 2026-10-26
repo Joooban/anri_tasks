@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { encrypt } from "@/lib/encryption";
+import { MAX_MESSAGE_LENGTH } from "@/lib/constants";
 import { friendlyError } from "@/lib/friendly-error";
 import { nullableRpcArg } from "@/lib/rpc-utils";
 import { getConversationMessages, type ConversationMessagesResult } from "@/lib/messaging-queries";
@@ -30,6 +31,7 @@ export async function createConversation(participantIds: string[], isGroup: bool
 export async function sendMessage(conversationId: string, body: string) {
   const trimmed = body.trim();
   if (!trimmed) return { error: "Message can't be empty." };
+  if (trimmed.length > MAX_MESSAGE_LENGTH) return { error: `Messages are limited to ${MAX_MESSAGE_LENGTH} characters.` };
 
   const supabase = await createClient();
   const { error } = await supabase.rpc("send_message_rpc", {
